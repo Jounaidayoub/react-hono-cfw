@@ -20,7 +20,7 @@
     //for now i only want these routes to be accedsed by the worker , and let the static assets be served directly
     //https://developers.cloudflare.com/workers/static-assets/routing/worker-script/#run-worker-first-for-selective-paths
     // https://github.com/cloudflare/workers-sdk/issues/8879#issue-2985523361
-    "run_worker_first": ["/api/auth/callback/*", "!/api/docs/*"]
+    "run_worker_first": ["/api/*", "!/api/docs/*"]
   },
 
   "d1_databases": [
