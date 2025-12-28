@@ -14,7 +14,13 @@
   "upload_source_maps": true,
   "assets": {
     "directory": "./dist/client",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    //this will make sure the req will hit the  wokre and not get served as static asset
+    //https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/
+    //for now i only want these routes to be accedsed by the worker , and let the static assets be served directly
+    //https://developers.cloudflare.com/workers/static-assets/routing/worker-script/#run-worker-first-for-selective-paths
+    // https://github.com/cloudflare/workers-sdk/issues/8879#issue-2985523361
+    "run_worker_first": ["/api/*", "!/api/docs/*"]
   },
 
   "d1_databases": [
@@ -23,7 +29,7 @@
       "database_name": "d1-cfw",
       "database_id": "1c360e75-5163-407a-b7b8-0acbcc4aa220"
     }
-  ]
+  ],
 
   /**
    * Smart Placement
@@ -41,8 +47,7 @@
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/
-   */
-  // "vars": {  "MY_VARIABLE": "production_value" }
+   */ "vars": { "MY_VARIABLE": "production_value" }
   /**
    * Service Bindings (communicate between multiple Workers)
    * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
