@@ -3,7 +3,6 @@ const app = new Hono<{ Bindings: Env }>();
 import { auth } from "../lib/auth";
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
-  console.log("Auth route hit");
   return auth.handler(c.req.raw);
 });
 
