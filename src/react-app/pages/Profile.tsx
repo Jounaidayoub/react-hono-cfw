@@ -1,0 +1,215 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { authClient } from "@/lib/auth-client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+
+interface Profile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  birthDate: string;
+  gender: string;
+  status: string;
+  school: string | null;
+  major: string | null;
+  year: string | null;
+  feesAmount: string;
+  paymentStatus: string;
+}
+
+export default function Profile() {
+  const navigate = useNavigate();
+  const { data: session } = authClient.useSession();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) {
+          setProfile(data);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const signOut = async () => {
+    await authClient.signOut();
+    navigate("/");
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted">
+        <div className="animate-pulse text-lg">Loading profile...</div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">Profile not found</p>
+            <Button onClick={() => navigate("/onboarding")} className="mt-4">
+              Complete Profile
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const initials =
+    `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
+
+  return (
+    <div className="min-h-screen bg-muted p-6 md:p-10">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Header Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={session?.user.image || undefined} />
+              <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <CardTitle className="text-2xl">
+                {profile.firstName} {profile.lastName}
+              </CardTitle>
+              <CardDescription className="text-base">
+                {session?.user.email}
+              </CardDescription>
+              <div className="flex gap-2 mt-2">
+                <Badge variant="secondary">{profile.status}</Badge>
+                <Badge
+                  variant={
+                    profile.paymentStatus === "paid" ? "default" : "outline"
+                  }
+                  className={
+                    profile.paymentStatus === "paid" ? "bg-green-600" : ""
+                  }
+                >
+                  {profile.paymentStatus === "paid"
+                    ? "Paid"
+                    : "Payment Pending"}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Profile Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <ProfileField label="First Name" value={profile.firstName} />
+              <ProfileField label="Last Name" value={profile.lastName} />
+            </div>
+            <Separator />
+            <div className="grid grid-cols-2 gap-4">
+              <ProfileField label="Phone Number" value={profile.phoneNumber} />
+              <ProfileField label="Date of Birth" value={profile.birthDate} />
+            </div>
+            <Separator />
+            <div className="grid grid-cols-2 gap-4">
+              <ProfileField label="Gender" value={profile.gender} />
+              <ProfileField label="Status" value={profile.status} />
+            </div>
+            {profile.status === "External" && profile.school && (
+              <>
+                <Separator />
+                <ProfileField
+                  label="School/University"
+                  value={profile.school}
+                />
+              </>
+            )}
+            {(profile.major || profile.year) && (
+              <>
+                <Separator />
+                <div className="grid grid-cols-2 gap-4">
+                  {profile.major && (
+                    <ProfileField label="Major/Branch" value={profile.major} />
+                  )}
+                  {profile.year && (
+                    <ProfileField label="Year" value={profile.year} />
+                  )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Registration Fee
+                </p>
+                <p className="text-2xl font-bold">{profile.feesAmount}</p>
+              </div>
+              <Badge
+                variant={
+                  profile.paymentStatus === "paid" ? "default" : "destructive"
+                }
+                className={`text-lg px-4 py-2 ${
+                  profile.paymentStatus === "paid" ? "bg-green-600" : ""
+                }`}
+              >
+                {profile.paymentStatus === "paid" ? "✓ Paid" : "Not Paid"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex gap-4">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => navigate("/onboarding")}
+          >
+            Edit Profile
+          </Button>
+          <Button variant="destructive" className="flex-1" onClick={signOut}>
+            Sign Out
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="font-medium">{value}</p>
+    </div>
+  );
+}
