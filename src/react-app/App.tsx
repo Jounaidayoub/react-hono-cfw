@@ -1,44 +1,15 @@
-// src/App.tsx
-// import { createAuthClient } from "better-auth/react";
-
 import { useState } from "react";
-// import reactLogo from "./assets/react.svg";
-// import viteLogo from "/vite.svg";
-// import cloudflareLogo from "./assets/Cloudflare_Logo.svg";
-// import honoLogo from "./assets/hono.svg";
-import "./App.css";
-import { authClient } from "../lib/auth-client";
+import { authClient } from "@/lib/auth-client";
+import { LoginForm } from "@/components/login-form";
 
 function App() {
-  //   const [count, setCount] = useState(0);
-  //   const [name, setName] = useState("unknown");
-
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userName, setUserName] = useState("");
-
-  const signUp = async () => {
-    console.log("Signing up", { email, password, name: userName });
-    await authClient.signUp.email(
-      {
-        email,
-        password,
-        name: userName,
-      },
-      {
-        onSuccess: () => {
-          alert("Signed up successfully!");
-        },
-        onError: (ctx) => {
-          console.log(ctx.error);
-          alert(ctx.error.message);
-        },
-      }
-    );
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const signIn = async () => {
+    setIsLoading(true);
     await authClient.signIn.email(
       {
         email,
@@ -46,76 +17,64 @@ function App() {
       },
       {
         onSuccess: () => {
-          alert("Signed in successfully!");
+          setIsLoading(false);
         },
         onError: (ctx) => {
-          console.log(ctx.error);
+          setIsLoading(false);
           alert(ctx.error.message);
         },
       }
     );
   };
 
+  const signInWithGoogle = async () => {
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: window.location.origin,
+    });
+  };
+
   const signOut = async () => {
     await authClient.signOut();
   };
 
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="card">
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+      <div className="flex w-full max-w-sm flex-col gap-6">
         {session ? (
-          <div>
-            <h2>Welcome, {session.user.name}!</h2>
-            <p>Email: {session.user.email}</p>
-            <button onClick={signOut}>Sign Out</button>
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              maxWidth: "300px",
-              margin: "0 auto",
-            }}
-          >
-            <h2>Auth Test</h2>
-            <input
-              type="text"
-              placeholder="Name (for sign up)"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={signIn}>Sign In</button>
-              <button onClick={signUp}>Sign Up</button>
-            </div>
+          <div className="flex flex-col gap-4 text-center">
+            <h1 className="text-2xl font-bold">
+              Welcome, {session.user.name}!
+            </h1>
+            <p className="text-muted-foreground">{session.user.email}</p>
             <button
-              onClick={async () =>
-                await authClient.signIn.social({
-                  provider: "google",
-                  callbackURL: window.location.origin,
-                })
-              }
+              onClick={signOut}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
             >
-              Sign in with Google
+              Sign Out
             </button>
           </div>
+        ) : (
+          <LoginForm
+            email={email}
+            password={password}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onSignIn={signIn}
+            onGoogleSignIn={signInWithGoogle}
+            isLoading={isLoading}
+          />
         )}
       </div>
-    </>
+    </div>
   );
 }
 
