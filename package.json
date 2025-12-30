@@ -12,6 +12,7 @@
 		"publish": true
 	},
 	"dependencies": {
+		"@radix-ui/react-avatar": "^1.1.11",
 		"@radix-ui/react-label": "^2.1.8",
 		"@radix-ui/react-separator": "^1.1.8",
 		"@radix-ui/react-slot": "^1.2.4",
@@ -22,11 +23,13 @@
 		"drizzle-orm": "^0.45.1",
 		"hono": "4.11.1",
 		"lucide-react": "^0.562.0",
+		"nanoid": "^5.1.6",
 		"react": "19.2.1",
 		"react-dom": "19.2.1",
 		"react-router": "^7.11.0",
 		"tailwind-merge": "^3.4.0",
-		"tailwindcss": "^4.1.18"
+		"tailwindcss": "^4.1.18",
+		"zod": "^4.2.1"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "1.15.3",
