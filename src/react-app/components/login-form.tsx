@@ -23,6 +23,7 @@ interface LoginFormProps extends React.ComponentProps<"div"> {
   onPasswordChange: (value: string) => void;
   onSignIn: () => void;
   onGoogleSignIn: () => void;
+  onNavigateSignup: () => void;
   isLoading?: boolean;
 }
 
@@ -34,6 +35,7 @@ export function LoginForm({
   onPasswordChange,
   onSignIn,
   onGoogleSignIn,
+  onNavigateSignup,
   isLoading = false,
   ...props
 }: LoginFormProps) {
@@ -109,7 +111,15 @@ export function LoginForm({
                   {isLoading ? "Signing in..." : "Login"}
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  Don&apos;t have an account?
+                  <Button
+                    variant="link"
+                    type="button"
+                    onClick={onNavigateSignup}
+                    className="px-1 text-primary"
+                  >
+                    Sign up
+                  </Button>
                 </FieldDescription>
               </Field>
             </FieldGroup>
