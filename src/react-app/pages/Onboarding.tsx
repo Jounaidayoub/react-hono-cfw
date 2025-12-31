@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuth } from "@/providers/auth-context";
 
 const years = [
   "1ère année",
@@ -22,6 +23,7 @@ const majors = ["SMI", "SMA", "SMC", "SMP", "SVT", "GI", "RSI", "2IA", "Other"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -57,12 +59,14 @@ export default function Onboarding() {
       });
 
       if (res.ok) {
-        navigate("/profile");
+        await refreshProfile();
+        navigate("/profile", { replace: true });
       } else {
         const data = await res.json();
         setError(data.error || "Failed to save profile");
       }
-    } catch (err) {
+    } catch (error) {
+      console.error(error);
       setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);

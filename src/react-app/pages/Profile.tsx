@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { authClient } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -12,46 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-
-interface Profile {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  birthDate: string;
-  gender: string;
-  status: string;
-  school: string | null;
-  major: string | null;
-  year: string | null;
-  feesAmount: string;
-  paymentStatus: string;
-}
+import { useAuth, type Profile as ProfileData } from "@/providers/auth-context";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { data: session } = authClient.useSession();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { status, session, profile, signOut } = useAuth();
 
-  useEffect(() => {
-    fetch("/api/profile")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.error) {
-          setProfile(data);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const signOut = async () => {
-    await authClient.signOut();
-    navigate("/");
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
   };
 
-  if (loading) {
+  if (status === "loading" && !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-muted">
         <div className="animate-pulse text-lg">Loading profile...</div>
@@ -74,17 +44,35 @@ export default function Profile() {
     );
   }
 
-  const initials =
-    `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
+  return (
+    <ProfileDetails
+      profile={profile}
+      sessionEmail={session?.user.email}
+      sessionImage={session?.user.image}
+      onEditProfile={() => navigate("/onboarding")}
+      onSignOut={handleSignOut}
+    />
+  );
+}
+
+interface ProfileDetailsProps {
+  profile: ProfileData;
+  sessionEmail?: string | null;
+  sessionImage?: string | null;
+  onEditProfile: () => void;
+  onSignOut: () => Promise<void>;
+}
+
+function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, onSignOut }: ProfileDetailsProps) {
+  const initials = `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
 
   return (
     <div className="min-h-screen bg-muted p-6 md:p-10">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header Card */}
         <Card>
           <CardHeader className="flex flex-row items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={session?.user.image || undefined} />
+              <AvatarImage src={sessionImage || undefined} />
               <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
                 {initials}
               </AvatarFallback>
@@ -93,29 +81,20 @@ export default function Profile() {
               <CardTitle className="text-2xl">
                 {profile.firstName} {profile.lastName}
               </CardTitle>
-              <CardDescription className="text-base">
-                {session?.user.email}
-              </CardDescription>
+              <CardDescription className="text-base">{sessionEmail}</CardDescription>
               <div className="flex gap-2 mt-2">
                 <Badge variant="secondary">{profile.status}</Badge>
                 <Badge
-                  variant={
-                    profile.paymentStatus === "paid" ? "default" : "outline"
-                  }
-                  className={
-                    profile.paymentStatus === "paid" ? "bg-green-600" : ""
-                  }
+                  variant={profile.paymentStatus === "paid" ? "default" : "outline"}
+                  className={profile.paymentStatus === "paid" ? "bg-green-600" : ""}
                 >
-                  {profile.paymentStatus === "paid"
-                    ? "Paid"
-                    : "Payment Pending"}
+                  {profile.paymentStatus === "paid" ? "Paid" : "Payment Pending"}
                 </Badge>
               </div>
             </div>
           </CardHeader>
         </Card>
 
-        {/* Profile Details */}
         <Card>
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
@@ -138,29 +117,21 @@ export default function Profile() {
             {profile.status === "External" && profile.school && (
               <>
                 <Separator />
-                <ProfileField
-                  label="School/University"
-                  value={profile.school}
-                />
+                <ProfileField label="School/University" value={profile.school} />
               </>
             )}
             {(profile.major || profile.year) && (
               <>
                 <Separator />
                 <div className="grid grid-cols-2 gap-4">
-                  {profile.major && (
-                    <ProfileField label="Major/Branch" value={profile.major} />
-                  )}
-                  {profile.year && (
-                    <ProfileField label="Year" value={profile.year} />
-                  )}
+                  {profile.major && <ProfileField label="Major/Branch" value={profile.major} />}
+                  {profile.year && <ProfileField label="Year" value={profile.year} />}
                 </div>
               </>
             )}
           </CardContent>
         </Card>
 
-        {/* Payment Card */}
         <Card>
           <CardHeader>
             <CardTitle>Payment Status</CardTitle>
@@ -168,18 +139,12 @@ export default function Profile() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Registration Fee
-                </p>
+                <p className="text-sm text-muted-foreground">Registration Fee</p>
                 <p className="text-2xl font-bold">{profile.feesAmount}</p>
               </div>
               <Badge
-                variant={
-                  profile.paymentStatus === "paid" ? "default" : "destructive"
-                }
-                className={`text-lg px-4 py-2 ${
-                  profile.paymentStatus === "paid" ? "bg-green-600" : ""
-                }`}
+                variant={profile.paymentStatus === "paid" ? "default" : "destructive"}
+                className={`text-lg px-4 py-2 ${profile.paymentStatus === "paid" ? "bg-green-600" : ""}`}
               >
                 {profile.paymentStatus === "paid" ? "✓ Paid" : "Not Paid"}
               </Badge>
@@ -187,16 +152,11 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Actions */}
         <div className="flex gap-4">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => navigate("/onboarding")}
-          >
+          <Button variant="outline" className="flex-1" onClick={onEditProfile}>
             Edit Profile
           </Button>
-          <Button variant="destructive" className="flex-1" onClick={signOut}>
+          <Button variant="destructive" className="flex-1" onClick={onSignOut}>
             Sign Out
           </Button>
         </div>
@@ -205,7 +165,11 @@ export default function Profile() {
   );
 }
 
-function ProfileField({ label, value }: { label: string; value: string }) {
+function ProfileField({ label, value }: { label: string; value: string | null }) {
+  if (!value) {
+    return null;
+  }
+
   return (
     <div>
       <p className="text-sm text-muted-foreground">{label}</p>
