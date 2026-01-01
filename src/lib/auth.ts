@@ -11,7 +11,10 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
   }),
-  trustedOrigins: trustedOrigins,
+  trustedOrigins: trustedOrigins.flatMap((origin) => [
+    origin,
+    origin.replace("https://", "https://*-"),
+  ]),
   emailAndPassword: {
     enabled: true,
     password: {
