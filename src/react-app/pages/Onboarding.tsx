@@ -1,8 +1,9 @@
-import { useState } from "react";
 import { useNavigate } from "react-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -10,66 +11,119 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/providers/auth-context";
 
 const years = [
-  "1ère année",
-  "2ème année",
-  "3ème année",
-  "4ème année",
-  "5ème année",
+  { label: "1ère année", value: "1ere" },
+  { label: "2ème année", value: "2eme" },
+  { label: "3ème année", value: "3eme" },
+  { label: "4ème année", value: "4eme" },
+  { label: "5ème année", value: "5eme" },
 ];
-const majors = ["SMI", "SMA", "SMC", "SMP", "SVT", "GI", "RSI", "2IA", "Other"];
+
+const majors = [
+  { label: "SMI", value: "SMI" },
+  { label: "SMA", value: "SMA" },
+  { label: "SMC", value: "SMC" },
+  { label: "SMP", value: "SMP" },
+  { label: "SVT", value: "SVT" },
+  { label: "GI", value: "GI" },
+  { label: "RSI", value: "RSI" },
+  { label: "2IA", value: "2IA" },
+  { label: "Other", value: "Other" },
+];
+
+const formSchema = z
+  .object({
+    firstName: z.string().min(2, "First name must be at least 2 characters"),
+    lastName: z.string().min(2, "Last name must be at least 2 characters"),
+    phoneNumber: z
+      .string()
+      .min(10, "Phone number must be at least 10 digits")
+      .regex(/^[0-9+]+$/, "Invalid phone number format"),
+    birthDate: z.string().min(1, "Date of birth is required"),
+    gender: z.enum(["Male", "Female"], {
+      message: "Please select a gender",
+    }),
+    status: z.enum(["FSTM", "External"], {
+      message: "Please select a status",
+    }),
+    school: z.string().optional(),
+    major: z.string().optional(),
+    year: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.status === "External") {
+        return data.school && data.school.length >= 2;
+      }
+      return true;
+    },
+    {
+      message: "School is required for external students",
+      path: ["school"],
+    }
+  );
+
+type FormData = z.infer<typeof formSchema>;
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    phoneNumber: "",
-    birthDate: "",
-    gender: "Male" as "Male" | "Female",
-    status: "FSTM" as "FSTM" | "External",
-    school: "",
-    major: "",
-    year: "",
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      phoneNumber: "",
+      birthDate: "",
+      gender: undefined,
+      status: undefined,
+      school: "",
+      major: "",
+      year: "",
+    },
   });
+  
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setError(null);
-  };
+  const watchStatus = form.watch("status");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
+  const onSubmit = async (data: FormData) => {
     try {
       const res = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
       if (res.ok) {
         await refreshProfile();
         navigate("/profile", { replace: true });
       } else {
-        const data = await res.json();
-        setError(data.error || "Failed to save profile");
+        const errorData = await res.json();
+        form.setError("root", {
+          message: errorData.error || "Failed to save profile",
+        });
       }
     } catch (error) {
       console.error(error);
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
+      form.setError("root", {
+        message: "Network error. Please try again.",
+      });
     }
   };
 
@@ -85,151 +139,263 @@ export default function Onboarding() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
-                {error}
-              </div>
-            )}
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <FieldGroup>
+              {form.formState.errors.root && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+                  {form.formState.errors.root.message}
+                </div>
+              )}
 
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
+              {/* Name Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
                   name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor={field.name}>First Name *</FieldLabel>
+                      <Input
+                        {...field}
+                        id={field.name}
+                        placeholder="John"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
+                <Controller
                   name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor={field.name}>Last Name *</FieldLabel>
+                      <Input
+                        {...field}
+                        id={field.name}
+                        placeholder="Doe"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
                 />
               </div>
-            </div>
 
-            {/* Contact Info */}
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number *</Label>
-              <Input
-                id="phoneNumber"
+              {/* Phone Number */}
+              <Controller
                 name="phoneNumber"
-                type="tel"
-                placeholder="0612345678"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                required
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>Phone Number *</FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type="tel"
+                      placeholder="0612345678"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">Date of Birth *</Label>
-              <Input
-                id="birthDate"
+              {/* Date of Birth */}
+              <Controller
                 name="birthDate"
-                type="date"
-                value={formData.birthDate}
-                onChange={handleChange}
-                required
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      Date of Birth *
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type="date"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
               />
-            </div>
 
-            {/* Gender */}
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender *</Label>
-              <select
-                id="gender"
+              {/* Gender */}
+              <Controller
                 name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
-                required
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
-            </div>
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="gender-select">Gender *</FieldLabel>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger
+                        id="gender-select"
+                        aria-invalid={fieldState.invalid}
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <select
-                id="status"
+              {/* Status */}
+              <Controller
                 name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
-                required
-              >
-                <option value="FSTM">FSTM Student</option>
-                <option value="External">External</option>
-              </select>
-            </div>
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="status-select">Status *</FieldLabel>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger
+                        id="status-select"
+                        aria-invalid={fieldState.invalid}
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FSTM">FSTM Student</SelectItem>
+                        <SelectItem value="External">External</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
 
-            {/* School - only show for External */}
-            {formData.status === "External" && (
-              <div className="space-y-2">
-                <Label htmlFor="school">School / University *</Label>
-                <Input
-                  id="school"
+              {/* School - only show for External */}
+              {watchStatus === "External" && (
+                <Controller
                   name="school"
-                  placeholder="Enter your school name"
-                  value={formData.school}
-                  onChange={handleChange}
-                  required
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        School / University *
+                      </FieldLabel>
+                      <Input
+                        {...field}
+                        id={field.name}
+                        placeholder="Enter your school name"
+                        aria-invalid={fieldState.invalid}
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              )}
+
+              {/* Major and Year */}
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
+                  name="major"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="major-select">
+                        Major/Branch
+                      </FieldLabel>
+                      <Select
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="major-select"
+                          aria-invalid={fieldState.invalid}
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="Select major" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {majors.map((m) => (
+                            <SelectItem key={m.value} value={m.value}>
+                              {m.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="year"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="year-select">Year</FieldLabel>
+                      <Select
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          id="year-select"
+                          aria-invalid={fieldState.invalid}
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map((y) => (
+                            <SelectItem key={y.value} value={y.value}>
+                              {y.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
                 />
               </div>
-            )}
 
-            {/* Major and Year */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="major">Major/Branch</Label>
-                <select
-                  id="major"
-                  name="major"
-                  value={formData.major}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                >
-                  <option value="">Select major</option>
-                  {majors.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="year">Year</Label>
-                <select
-                  id="year"
-                  name="year"
-                  value={formData.year}
-                  onChange={handleChange}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                >
-                  <option value="">Select year</option>
-                  {years.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Complete Registration"}
-            </Button>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting
+                  ? "Saving..."
+                  : "Complete Registration"}
+              </Button>
+            </FieldGroup>
           </form>
         </CardContent>
       </Card>
