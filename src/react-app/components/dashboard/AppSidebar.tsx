@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
-  FolderKanban,
-  Award,
+  // FolderKanban,
+  Calendar,
   User,
   Settings,
 } from "lucide-react";
@@ -22,8 +22,8 @@ export function AppSidebar() {
   const location = useLocation();
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/projects", label: "Projects", icon: FolderKanban },
-    { to: "/certificates", label: "Certificates", icon: Award },
+    // { to: "/projects", label: "Projects", icon: FolderKanban },
+    { to: "/calendar", label: "Calendar", icon: Calendar },
     { to: "/profile", label: "Profile", icon: User },
     { to: "/settings", label: "Settings", icon: Settings },
   ];

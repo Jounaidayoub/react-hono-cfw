@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Bell, LogOut, Settings, User } from "lucide-react";
+import { ModeToggle } from "@/components/dashboard/Theme-toggle";
 
 export default function DashboardLayout() {
   const { profile, session, signOut } = useAuth();
@@ -93,6 +94,8 @@ export default function DashboardLayout() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <ModeToggle />
         </header>
         <div className="flex-1 p-6 md:p-8 pt-6">
           <Outlet />
