@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router";
+import { Toaster } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
 import { AuthProvider } from "@/providers/auth-context";
 import Login from "@/pages/Login";
@@ -11,6 +12,7 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 function App() {
   return (
     <AuthProvider>
+      <Toaster richColors position="top-center" />
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 

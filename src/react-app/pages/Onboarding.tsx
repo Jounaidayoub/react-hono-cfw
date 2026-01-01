@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,15 +116,24 @@ export default function Onboarding() {
         navigate("/profile", { replace: true });
       } else {
         const errorData = await res.json();
-        form.setError("root", {
-          message: errorData.error || "Failed to save profile",
-        });
+        let errorMessage = errorData.error || "Failed to save profile";
+        
+        // Format validation errors if details are present
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const validationErrors = errorData.details
+            .map((detail: { message?: string; path?: string[] }) => {
+              const path = detail.path?.join(".") || "field";
+              return `${path}: ${detail.message || "Invalid value"}`;
+            })
+            .join(", ");
+          errorMessage = validationErrors || errorMessage;
+        }
+        
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error(error);
-      form.setError("root", {
-        message: "Network error. Please try again.",
-      });
+      toast.error("Network error. Please try again.");
     }
   };
 
@@ -141,12 +151,6 @@ export default function Onboarding() {
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
-              {form.formState.errors.root && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
-                  {form.formState.errors.root.message}
-                </div>
-              )}
-
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <Controller

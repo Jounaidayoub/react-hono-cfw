@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
 export type Profile = {
@@ -89,7 +90,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       if (!response.ok) {
-        throw new Error("Failed to load profile");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || "Failed to load profile";
+        throw new Error(errorMessage);
       }
 
       const data: Profile = await response.json();
@@ -100,7 +103,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      setProfileError(error as Error);
+      const errorObj = error as Error;
+      setProfileError(errorObj);
+      // When profile fetch fails, we can't verify if profile exists
+      // Set needsProfile to true as a safe default to require onboarding
+      setNeedsProfile(true);
+      toast.error(errorObj.message || "Failed to load profile");
     } finally {
       if (!controller.signal.aborted) {
         setProfileLoading(false);

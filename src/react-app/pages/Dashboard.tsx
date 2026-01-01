@@ -63,7 +63,7 @@ export default function Dashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Ready to build, <span className="text-primary">{firstName}</span>?
+          Ready to build, <span className="text-primary">{firstName}{" "}</span>?
         </h1>
         <p className="text-muted-foreground mt-1 text-lg">
           Your robotics journey continues. Here's your daily briefing.

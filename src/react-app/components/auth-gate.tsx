@@ -23,17 +23,21 @@ export function AuthGate({ requireProfile = true, children }: AuthGateProps) {
       return;
     }
 
+    // Handle error state: when profile fetch fails, treat as needsProfile=true
+    // to ensure users complete onboarding when we can't verify their profile
+    const effectiveNeedsProfile = status === "error" ? true : needsProfile;
+
     if (!isAuthenticated && !isAuthRoute) {
       navigate("/login", { replace: true });
       return;
     }
 
-    if (isAuthenticated && needsProfile && !isOnboardingRoute) {
+    if (isAuthenticated && effectiveNeedsProfile && !isOnboardingRoute) {
       navigate("/onboarding", { replace: true });
       return;
     }
 
-    if (isAuthenticated && !needsProfile) {
+    if (isAuthenticated && !effectiveNeedsProfile) {
       if (isOnboardingRoute) {
         navigate("/profile", { replace: true });
         return;
@@ -61,6 +65,9 @@ export function AuthGate({ requireProfile = true, children }: AuthGateProps) {
     );
   }
 
+  // Handle error state: when profile fetch fails, treat as needsProfile=true
+  const effectiveNeedsProfile = status === "error" ? true : needsProfile;
+
   if (!isAuthenticated) {
     if (isAuthRoute) {
       return <>{children}</>;
@@ -69,11 +76,11 @@ export function AuthGate({ requireProfile = true, children }: AuthGateProps) {
     return null;
   }
 
-  if (needsProfile && !isOnboardingRoute) {
+  if (effectiveNeedsProfile && !isOnboardingRoute) {
     return null;
   }
 
-  if (!needsProfile) {
+  if (!effectiveNeedsProfile) {
     if (isOnboardingRoute) {
       return null;
     }

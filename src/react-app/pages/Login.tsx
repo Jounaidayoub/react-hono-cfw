@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { LoginForm } from "@/components/login-form";
 import { useAuth } from "@/providers/auth-context";
 
@@ -18,7 +19,7 @@ export default function Login() {
         onSuccess: () => setIsLoading(false),
         onError: ({ error }) => {
           setIsLoading(false);
-          alert(error.message);
+          toast.error(error.message);
         },
       }
     );

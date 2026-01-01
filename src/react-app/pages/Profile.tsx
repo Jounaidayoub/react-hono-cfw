@@ -70,23 +70,26 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
     <div className="min-h-screen bg-muted p-6 md:p-10">
       <div className="max-w-2xl mx-auto space-y-6">
         <Card>
-          <CardHeader className="flex flex-row items-center gap-4">
+          <CardHeader className="flex flex-col md:flex-row items-center gap-4">
             <Avatar className="h-20 w-20">
               <AvatarImage src={sessionImage || undefined} />
               <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
+            <div className="flex-1 text-center md:text-left">
               <CardTitle className="text-2xl">
                 {profile.firstName} {profile.lastName}
               </CardTitle>
               <CardDescription className="text-base">{sessionEmail}</CardDescription>
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2 justify-center md:justify-start">
                 <Badge variant="secondary">{profile.status}</Badge>
                 <Badge
-                  variant={profile.paymentStatus === "paid" ? "default" : "outline"}
-                  className={profile.paymentStatus === "paid" ? "bg-green-600" : ""}
+                  className={
+                    profile.paymentStatus === "paid"
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-red-600 text-white hover:bg-red-700"
+                  }
                 >
                   {profile.paymentStatus === "paid" ? "Paid" : "Payment Pending"}
                 </Badge>
@@ -100,17 +103,17 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
             <CardTitle>Profile Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ProfileField label="First Name" value={profile.firstName} />
               <ProfileField label="Last Name" value={profile.lastName} />
             </div>
             <Separator />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ProfileField label="Phone Number" value={profile.phoneNumber} />
               <ProfileField label="Date of Birth" value={profile.birthDate} />
             </div>
             <Separator />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ProfileField label="Gender" value={profile.gender} />
               <ProfileField label="Status" value={profile.status} />
             </div>
@@ -123,7 +126,7 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
             {(profile.major || profile.year) && (
               <>
                 <Separator />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {profile.major && <ProfileField label="Major/Branch" value={profile.major} />}
                   {profile.year && <ProfileField label="Year" value={profile.year} />}
                 </div>
@@ -137,14 +140,17 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
             <CardTitle>Payment Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Registration Fee</p>
                 <p className="text-2xl font-bold">{profile.feesAmount}</p>
               </div>
               <Badge
-                variant={profile.paymentStatus === "paid" ? "default" : "destructive"}
-                className={`text-lg px-4 py-2 ${profile.paymentStatus === "paid" ? "bg-green-600" : ""}`}
+                className={`text-lg px-4 py-2 ${
+                  profile.paymentStatus === "paid"
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "bg-red-600 text-white hover:bg-red-700"
+                }`}
               >
                 {profile.paymentStatus === "paid" ? "✓ Paid" : "Not Paid"}
               </Badge>
@@ -152,7 +158,7 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
           <Button variant="outline" className="flex-1" onClick={onEditProfile}>
             Edit Profile
           </Button>

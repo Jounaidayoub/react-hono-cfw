@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { SignupForm } from "@/components/signup-form";
 import { useAuth } from "@/providers/auth-context";
 
@@ -22,7 +23,7 @@ export default function Signup() {
 
     if (password !== confirmPassword) {
       setIsLoading(false);
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -35,7 +36,7 @@ export default function Signup() {
         },
         onError: ({ error }) => {
           setIsLoading(false);
-          alert(error.message);
+          toast.error(error.message);
         },
       }
     );
