@@ -1,24 +1,20 @@
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import { AuthGate } from "@/components/auth-gate";
 import { AuthProvider } from "@/providers/auth-context";
-import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Profile from "@/pages/Profile";
 import Signup from "@/pages/Signup";
+import Dashboard from "@/pages/Dashboard";
+import DashboardLayout from "@/layouts/DashboardLayout";
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <AuthGate requireProfile={false}>
-              <Home />
-            </AuthGate>
-          }
-        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* Public/Auth Routes */}
         <Route
           path="/login"
           element={
@@ -43,14 +39,18 @@ function App() {
             </AuthGate>
           }
         />
+
+        {/* Dashboard Layout Routes */}
         <Route
-          path="/profile"
           element={
             <AuthGate>
-              <Profile />
+              <DashboardLayout />
             </AuthGate>
           }
-        />
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
       </Routes>
     </AuthProvider>
   );
