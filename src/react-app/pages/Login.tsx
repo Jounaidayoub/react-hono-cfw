@@ -27,6 +27,7 @@ export default function Login() {
   const signInWithGoogle = async () => {
     await signInGoogle({
       provider: "google",
+      //this need a better look , mn b3d
       callbackURL: `${window.location.origin}/profile`,
     });
   };
