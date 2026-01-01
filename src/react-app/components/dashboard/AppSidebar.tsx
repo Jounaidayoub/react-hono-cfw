@@ -8,42 +8,18 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-<<<<<<< Updated upstream
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-=======
->>>>>>> Stashed changes
 import {
   LayoutDashboard,
   FolderKanban,
   Award,
   User,
   Settings,
-<<<<<<< Updated upstream
-  LogOut,
-} from "lucide-react";
-import { useAuth } from "@/providers/auth-context";
-import { useNavigate, useLocation } from "react-router";
-
-export function AppSidebar() {
-  const { profile, session, signOut } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/login", { replace: true });
-  };
-
-=======
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-
->>>>>>> Stashed changes
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/projects", label: "Projects", icon: FolderKanban },
@@ -52,15 +28,6 @@ export function AppSidebar() {
     { to: "/settings", label: "Settings", icon: Settings },
   ];
 
-<<<<<<< Updated upstream
-  const initials = (
-    profile?.firstName?.[0] ||
-    session?.user?.name?.[0] ||
-    "U"
-  ).toUpperCase();
-
-=======
->>>>>>> Stashed changes
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b">
@@ -90,25 +57,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t gap-4">
-<<<<<<< Updated upstream
-        {/* User Info */}
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={session?.user?.image || undefined} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium">
-              {profile?.firstName || session?.user?.name}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {session?.user?.email}
-            </p>
-          </div>
-        </div>
-
-=======
->>>>>>> Stashed changes
         {/* Daily Goal Widget */}
         <div className="bg-muted/50 rounded-lg p-3">
           <div className="flex justify-between text-xs mb-1.5">
@@ -119,18 +67,6 @@ export function AppSidebar() {
             <div className="h-full bg-primary w-[85%] rounded-full" />
           </div>
         </div>
-<<<<<<< Updated upstream
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Log Out</span>
-        </Button>
-=======
->>>>>>> Stashed changes
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
