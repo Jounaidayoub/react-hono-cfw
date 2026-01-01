@@ -5,11 +5,13 @@ import { db } from "./db"; // your drizzle instance
 import { env } from "cloudflare:workers";
 import { Buffer } from "node:buffer";
 
+const trustedOrigins: string[] = env.TRUSTED_ORGINS.split(",");
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
   }),
+  trustedOrigins: trustedOrigins,
   emailAndPassword: {
     enabled: true,
     password: {
