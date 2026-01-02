@@ -31,26 +31,34 @@ export function SessionCard({
   return (
     <Card
       className={cn(
-        "bg-card/50 border-border/50 overflow-hidden",
+        "bg-card border-border overflow-hidden",
         isLarge && "col-span-2"
       )}
     >
-      <CardContent className={cn("p-0", isLarge && "flex gap-4")}>
+      <CardContent
+        className={cn(
+          "p-0",
+          isLarge && "flex gap-4",
+          "flex flex-col md:flex-row "
+        )}
+      >
         {thumbnail && (
           <div
             className={cn(
-              "bg-muted flex items-center justify-center relative overflow-hidden",
-              isLarge ? "w-48 h-full min-h-[160px]" : "w-full h-24"
+              "overflow-hidden basis-1/3 shrink-0",
+              "w-full aspect-[16/9] md:w-auto relative md:aspect-auto"
             )}
           >
             <img
               src={thumbnail}
               alt={title}
-              className="object-cover w-full h-full"
+              className="w-full h-full object-cover"
             />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-t md:bg-linear-to-l from-card from-1%  to-transparent to-40%" />
           </div>
         )}
-        <div className="p-4 flex-1 flex flex-col justify-center">
+
+        <div className="p-4 flex-auto flex flex-col justify-center">
           <h3 className="font-semibold text-lg leading-tight">{title}</h3>
           {description && (
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

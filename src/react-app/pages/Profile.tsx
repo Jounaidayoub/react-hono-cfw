@@ -67,7 +67,7 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
   const initials = `${profile.firstName[0]}${profile.lastName[0]}`.toUpperCase();
 
   return (
-    <div className="min-h-screen bg-muted p-6 md:p-10">
+    <div className="min-h-screen  p-6 md:p-10">
       <div className="max-w-2xl mx-auto space-y-6">
         <Card>
           <CardHeader className="flex flex-col md:flex-row items-center gap-4">
@@ -149,7 +149,7 @@ function ProfileDetails({ profile, sessionEmail, sessionImage, onEditProfile, on
                 className={`text-lg px-4 py-2 ${
                   profile.paymentStatus === "paid"
                     ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                    : "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-destructive text-white hover:bg-destructive/90"
                 }`}
               >
                 {profile.paymentStatus === "paid" ? "✓ Paid" : "Not Paid"}

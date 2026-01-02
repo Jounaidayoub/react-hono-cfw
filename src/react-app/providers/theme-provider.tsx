@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react"
 
+// we will make the theme more dynamic later
+const BASE_THEME_CLASS = "xplore"
+
 type Theme = "dark" | "light" | "system"
 
 type ThemeProviderProps = {
@@ -32,7 +35,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement
-
+    root.classList.add(BASE_THEME_CLASS)
     root.classList.remove("light", "dark")
 
     if (theme === "system") {

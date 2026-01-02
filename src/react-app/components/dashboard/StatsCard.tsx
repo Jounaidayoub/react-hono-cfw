@@ -18,7 +18,7 @@ export function StatsCard({
   className,
 }: StatsCardProps) {
   return (
-    <Card className={cn("bg-card/50 border-border/50", className)}>
+    <Card className={cn("bg-card border-border", className)}>
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
           {icon}
