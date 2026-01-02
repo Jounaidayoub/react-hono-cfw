@@ -115,6 +115,8 @@ export default function Onboarding() {
         await refreshProfile();
         navigate("/profile", { replace: true });
       } else {
+        // TODO : we need a better error hadnellng herer , in the whole react app actually lol
+
         const errorData = await res.json();
         let errorMessage = errorData.error || "Failed to save profile";
         
