@@ -28,7 +28,7 @@ export default function Login() {
   const signInWithGoogle = async () => {
     await signInGoogle({
       provider: "google",
-      callbackURL: `/profile`,
+      callbackURL: `/dashboard`,
     });
   };
 
