@@ -15,6 +15,13 @@
       "when": 1767134929019,
       "tag": "0001_clean_psylocke",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1769168877754,
+      "tag": "0002_quick_ozymandias",
+      "breakpoints": true
     }
   ]
 }
