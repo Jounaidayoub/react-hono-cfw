@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, LogOut, Settings, User } from "lucide-react";
+import { Bell, LogOut, Settings, Shield, User } from "lucide-react";
 import { ModeToggle } from "@/components/dashboard/Theme-toggle";
 
 export default function DashboardLayout() {
-  const { profile, session, signOut } = useAuth();
+  const { profile, session, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -45,6 +45,17 @@ export default function DashboardLayout() {
           <Separator orientation="vertical" className="mr-2 h-4" />
 
           <div className="flex-1" />
+
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              className="gap-2"
+              onClick={() => navigate("/admin")}
+            >
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Admin</span>
+            </Button>
+          )}
 
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
