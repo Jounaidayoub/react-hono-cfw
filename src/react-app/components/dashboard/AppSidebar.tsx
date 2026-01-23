@@ -14,16 +14,22 @@ import {
   Calendar,
   User,
   Settings,
+  Shield,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
+import { useAuth } from "@/providers/auth-context";
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin } = useAuth();
   const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     // { to: "/projects", label: "Projects", icon: FolderKanban },
     { to: "/calendar", label: "Calendar", icon: Calendar },
+    ...(isAdmin
+      ? [{ to: "/admin", label: "Admin", icon: Shield }]
+      : []),
     { to: "/profile", label: "Profile", icon: User },
     { to: "/settings", label: "Settings", icon: Settings },
   ];
