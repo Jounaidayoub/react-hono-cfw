@@ -32,8 +32,7 @@ export default function Login() {
     // whihc not only bad ux , but also shows sometimes a btter-auth error
     await signInGoogle({
       provider: "google",
-      callbackURL: `/profile`,
-      
+      callbackURL: `/dashboard`,
     });
   };
 
