@@ -201,3 +201,5 @@ dist
 .dev.vars*
 !.dev.vars.example
 .worktrees/
+
+knip.json

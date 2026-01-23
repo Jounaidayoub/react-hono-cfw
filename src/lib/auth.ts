@@ -1,11 +1,16 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { admin } from "better-auth/plugins";
 import { db } from "./db"; // your drizzle instance
 
 import { env } from "cloudflare:workers";
 import { Buffer } from "node:buffer";
 
 const trustedOrigins: string[] = env.TRUSTED_ORGINS.split(",");
+
+const adminUserIds = env.ADMIN_USER_IDS
+  ? env.ADMIN_USER_IDS.split(",").map((id: string) => id.trim())
+  : [];
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -86,4 +91,11 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
   },
+  plugins: [
+    admin({
+      defaultRole: "user",
+      adminRoles: ["admin"],
+      adminUserIds: adminUserIds,
+    }),
+  ],
 });

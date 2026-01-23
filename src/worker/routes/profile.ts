@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { drizzle } from "drizzle-orm/d1";
+// import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { auth } from "../../lib/auth";
 import { userProfiles } from "../../lib/schemas";
+import { db } from "../../lib/db";
 
 type Env = {
     d1_cfw: D1Database;
@@ -32,7 +33,7 @@ app.get("/", async (c) => {
         return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const db = drizzle(c.env.d1_cfw);
+    // const db = drizzle(c.env.d1_cfw);
     const profile = await db
         .select()
         .from(userProfiles)
@@ -66,7 +67,7 @@ app.post("/", async (c) => {
     const feesAmount = data.status === "FSTM" ? "49 DH" : "79 DH";
     const school = data.status === "FSTM" ? "FSTM" : (data.school || "Unknown");
 
-    const db = drizzle(c.env.d1_cfw);
+    // const db = drizzle(c.env.d1_cfw);
 
     // Check if profile exists
     const existing = await db

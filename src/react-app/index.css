@@ -199,9 +199,11 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50 font-sans;
+    @apply border-border outline-ring/50 font-sans font-sans;
   }
   body {
     @apply bg-background text-foreground;
   }
 }
+
+

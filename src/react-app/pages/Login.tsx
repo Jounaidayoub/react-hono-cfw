@@ -26,6 +26,10 @@ export default function Login() {
   };
 
   const signInWithGoogle = async () => {
+    //TODO: handle errors and there is problem where
+    // of the browser history stack : after signitn in successfully the user will land on the 
+    // the callback url spicified but if he clikcs back he will land the on the oauht prider page 
+    // whihc not only bad ux , but also shows sometimes a btter-auth error
     await signInGoogle({
       provider: "google",
       callbackURL: `/dashboard`,

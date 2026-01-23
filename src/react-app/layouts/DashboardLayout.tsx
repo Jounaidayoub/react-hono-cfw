@@ -97,7 +97,7 @@ export default function DashboardLayout() {
 
           <ModeToggle />
         </header>
-        <div className="flex-1 p-6 md:p-8 pt-6">
+        <div className="flex-1 p-4 md:p-8 pt-6">
           <Outlet />
         </div>
       </SidebarInset>

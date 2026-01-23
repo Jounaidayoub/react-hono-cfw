@@ -9,6 +9,10 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
   return auth.handler(c.req.raw);
 });
 
+app.on(["POST", "GET"], "/api/admin/*", (c) => {
+  return auth.handler(c.req.raw);
+});
+
 // Mount profile routes
 app.route("/api/profile", profileRouter);
 

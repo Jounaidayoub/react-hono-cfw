@@ -7,6 +7,7 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		MY_VARIABLE: "production_value";
+		ADMIN_USER_IDS: string;
 		BETTER_AUTH_SECRET: string;
 		BETTER_AUTH_URL: string;
 		GOOGLE_CLIENT_SECRET: string;
