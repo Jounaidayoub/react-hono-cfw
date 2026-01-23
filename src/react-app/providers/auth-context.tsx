@@ -36,6 +36,7 @@ interface AuthContextValue {
   session: ReturnType<typeof authClient.useSession>["data"];
   profile: Profile | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   needsProfile: boolean;
   refreshProfile: () => Promise<void>;
   signInEmail: typeof authClient.signIn.email;
@@ -130,17 +131,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInEmail = useCallback<AuthContextValue["signInEmail"]>(
     (credentials, options) => authClient.signIn.email(credentials, options),
-    []
+    [],
   );
 
   const signInGoogle = useCallback<AuthContextValue["signInGoogle"]>(
     (options) => authClient.signIn.social(options),
-    []
+    [],
   );
 
   const signUpEmail = useCallback<AuthContextValue["signUpEmail"]>(
     (payload, options) => authClient.signUp.email(payload, options),
-    []
+    [],
   );
 
   const signOut = useCallback<AuthContextValue["signOut"]>(async (...args) => {
@@ -165,12 +166,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return "ready";
   }, [sessionState.isPending, profileLoading, profileError]);
 
+  const isAdmin = useMemo(() => {
+    const role = session?.user?.role;
+    return role === "admin";
+  }, [session?.user?.role]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       session,
       profile,
       isAuthenticated: Boolean(session?.user),
+      isAdmin,
       needsProfile,
       refreshProfile,
       signInEmail,
@@ -182,13 +189,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       status,
       session,
       profile,
+      isAdmin,
       needsProfile,
       refreshProfile,
       signInEmail,
       signInGoogle,
       signUpEmail,
       signOut,
-    ]
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
