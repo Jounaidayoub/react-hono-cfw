@@ -130,6 +130,12 @@ export default function Admin() {
       sorting,
       rowSelection,
     },
+    initialState:{
+      pagination:{
+        pageSize: 15,
+        pageIndex:0
+      }
+    },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
