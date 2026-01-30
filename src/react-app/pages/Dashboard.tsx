@@ -66,7 +66,7 @@ export default function Dashboard() {
           Ready to build, <span className="text-primary">{firstName}{" "}</span>?
         </h1>
         <p className="text-muted-foreground mt-1 text-lg">
-          Your robotics journey continues. Here's your daily briefing.
+          Your 11111 robotics journey continues. Here's your daily briefing.
         </p>
       </div>
 
