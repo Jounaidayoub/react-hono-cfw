@@ -1,8 +1,8 @@
-import { Hono } from "hono";
 import { auth } from "../lib/auth";
+import { createHonoApp } from "./app";
 import profileRouter from "./routes/profile";
 
-const app = new Hono<{ Bindings: Env }>();
+const app = createHonoApp();
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
   console.log("Auth route hit");
