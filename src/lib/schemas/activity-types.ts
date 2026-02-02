@@ -53,3 +53,10 @@ export const activityTypeUpdateSchema = z.object({
 export type ActivityTypeSelect = z.infer<typeof activityTypeSelectSchema>;
 export type ActivityTypeInsertZod = z.infer<typeof activityTypeInsertSchema>;
 export type ActivityTypeUpdate = z.infer<typeof activityTypeUpdateSchema>;
+
+// XP response schema
+export const xpResponseSchema = z.object({
+  totalXp: z.number(),
+});
+
+export type XPResponse = z.infer<typeof xpResponseSchema>;
