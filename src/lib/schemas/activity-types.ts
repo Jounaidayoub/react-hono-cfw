@@ -42,5 +42,14 @@ export const activityTypeInsertSchema = createInsertSchema(activityTypes, {
   xpValue: z.number().int().min(0),
 });
 
+// Schema for updating activity types (partial, excludes id/code/timestamps)
+export const activityTypeUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).nullish(),
+  xpValue: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+});
+
 export type ActivityTypeSelect = z.infer<typeof activityTypeSelectSchema>;
 export type ActivityTypeInsertZod = z.infer<typeof activityTypeInsertSchema>;
+export type ActivityTypeUpdate = z.infer<typeof activityTypeUpdateSchema>;
