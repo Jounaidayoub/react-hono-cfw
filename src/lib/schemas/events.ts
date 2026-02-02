@@ -57,10 +57,14 @@ export const eventFormSchema = z.object({
   name: z.string().min(1, "Event name is required").max(200),
   description: z.string().max(2000).optional(),
   location: z.string().max(500).optional(),
-  startsAt: z.coerce.date(),
-  endsAt: z.coerce.date(),
-  qrRotationSeconds: z.number().int().min(10).max(300).default(30),
-}).refine((data) => data.endsAt > data.startsAt, {
+  startsAt: z.string().min(1, "Start time is required"),
+  endsAt: z.string().min(1, "End time is required"),
+  qrRotationSeconds: z.number().int().min(10).max(300),
+}).refine((data) => {
+  const start = new Date(data.startsAt);
+  const end = new Date(data.endsAt);
+  return end > start;
+}, {
   message: "End time must be after start time",
   path: ["endsAt"],
 });
@@ -68,3 +72,41 @@ export const eventFormSchema = z.object({
 export type EventSelect = z.infer<typeof eventSelectSchema>;
 export type EventInsertZod = z.infer<typeof eventInsertSchema>;
 export type EventFormData = z.infer<typeof eventFormSchema>;
+
+// QR code response schema
+export const qrDataSchema = z.object({
+  qrContent: z.string(),
+  expiresAt: z.coerce.date(),
+  ttlSeconds: z.number(),
+  rotationSeconds: z.number(),
+});
+
+export type QRData = z.infer<typeof qrDataSchema>;
+
+// Event attendee schema
+export const attendeeSchema = z.object({
+  userId: z.string(),
+  userName: z.string().nullable(),
+  userEmail: z.string(),
+  checkedInAt: z.coerce.date(),
+  xpAwarded: z.number(),
+});
+
+export type Attendee = z.infer<typeof attendeeSchema>;
+
+// Helper to get event status
+export function getEventStatus(
+  event: Event
+): "upcoming" | "active" | "ended" {
+  const now = new Date();
+  if (now < event.startsAt) return "upcoming";
+  if (now > event.endsAt) return "ended";
+  return "active";
+}
+
+// Helper to format date for datetime-local input
+export function formatDateTimeLocal(date: Date): string {
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+}

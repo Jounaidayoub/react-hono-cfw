@@ -31,7 +31,14 @@ app.post("/", authMiddleware, adminMiddleware, async (c) => {
     return c.json({ error: "Invalid data", details: result.error.issues }, 400);
   }
 
-  const event = await createEvent(result.data, user.id);
+  const event = await createEvent(
+    {
+      ...result.data,
+      startsAt: new Date(result.data.startsAt),
+      endsAt: new Date(result.data.endsAt),
+    },
+    user.id
+  );
   return c.json(event, 201);
 });
 
@@ -71,7 +78,12 @@ app.patch("/:id", authMiddleware, adminMiddleware, async (c) => {
     return c.json({ error: "Invalid data", details: result.error.issues }, 400);
   }
 
-  const event = await updateEvent(id, result.data);
+  const { startsAt, endsAt, ...restData } = result.data;
+  const event = await updateEvent(id, {
+    ...restData,
+    ...(startsAt ? { startsAt: new Date(startsAt) } : {}),
+    ...(endsAt ? { endsAt: new Date(endsAt) } : {}),
+  });
   if (!event) {
     return c.json({ error: "Event not found" }, 404);
   }
