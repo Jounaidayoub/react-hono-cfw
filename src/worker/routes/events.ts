@@ -39,7 +39,7 @@ app.post("/", authMiddleware, adminMiddleware, async (c) => {
     },
     user.id
   );
-  return c.json(event, 201);
+  return c.json({event}, 201);
 });
 
 /**
@@ -47,7 +47,7 @@ app.post("/", authMiddleware, adminMiddleware, async (c) => {
  */
 app.get("/", authMiddleware, adminMiddleware, async (c) => {
   const events = await listEvents();
-  return c.json(events);
+  return c.json({events});
 });
 
 /**
@@ -61,7 +61,7 @@ app.get("/:id", authMiddleware, adminMiddleware, async (c) => {
     return c.json({ error: "Event not found" }, 404);
   }
 
-  return c.json(event);
+  return c.json({event});
 });
 
 /**
@@ -88,7 +88,7 @@ app.patch("/:id", authMiddleware, adminMiddleware, async (c) => {
     return c.json({ error: "Event not found" }, 404);
   }
 
-  return c.json(event);
+  return c.json({event});
 });
 
 /**
@@ -120,7 +120,7 @@ app.get("/:id/qr", authMiddleware, adminMiddleware, async (c) => {
     return c.json({ error: "Event not found" }, 404);
   }
 
-  return c.json(qrData);
+  return c.json({qrData});
 });
 
 /**
@@ -135,7 +135,7 @@ app.get("/:id/attendees", authMiddleware, adminMiddleware, async (c) => {
   }
 
   const attendees = await getEventAttendees(id);
-  return c.json(attendees);
+  return c.json({attendees});
 });
 
 /**

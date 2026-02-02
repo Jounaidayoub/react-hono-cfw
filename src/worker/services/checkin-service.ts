@@ -39,23 +39,19 @@ export async function processCheckin(
   eventId: string,
   qrCode: string
 ): Promise<CheckinResult> {
-  //  Check authentication
   if (!userId) {
     return { success: false, error: "NOT_AUTHENTICATED" };
   }
 
-  //  Fetch event
   const event = await getEventById(eventId);
   if (!event) {
     return { success: false, error: "EVENT_NOT_FOUND" };
   }
 
-  //  Validate event is active (within time window)
   if (!isEventActive(event)) {
     return { success: false, error: "EVENT_NOT_ACTIVE" };
   }
 
-  //  Validate QR code matches current secret
   if (event.currentQrSecret !== qrCode) {
     return { success: false, error: "INVALID_CODE" };
   }
@@ -65,7 +61,7 @@ export async function processCheckin(
     return { success: false, error: "CODE_EXPIRED" };
   }
 
-  //  Award XP (xp-service handles idempotency)
+  //  Award XP ( it will handle duplicate check-in attempts)
   const awardResult = await awardActivity(
     userId,
     "MEETUP_ATTENDANCE",
@@ -96,7 +92,7 @@ export async function processCheckin(
  * Get a user's check-in history with event names
  */
 export async function getUserCheckins(userId: string): Promise<UserCheckin[]> {
-  // 1. Fetch all event-type activities for this user
+  // FIX : this whole fucntion can be opttimzed 
   const activities = await db
     .select()
     .from(userActivities)
@@ -112,7 +108,6 @@ export async function getUserCheckins(userId: string): Promise<UserCheckin[]> {
     return [];
   }
 
-  // 2. Batch fetch event names using inArray() (bug fix from prototype)
   const eventIds = eventActivities.map((a) => a.referenceId!);
   const eventRecords = await db
     .select({ id: events.id, name: events.name })
@@ -120,10 +115,8 @@ export async function getUserCheckins(userId: string): Promise<UserCheckin[]> {
     .where(inArray(events.id, eventIds))
     .all();
 
-  // Create lookup map
   const eventNameMap = new Map(eventRecords.map((e) => [e.id, e.name]));
 
-  // 3. Build enriched check-in list
   return eventActivities.map((activity) => ({
     activityId: activity.id,
     eventId: activity.referenceId!,

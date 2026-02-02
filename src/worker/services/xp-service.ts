@@ -39,31 +39,25 @@ export async function awardActivity(
     return { success: false, error: "ACTIVITY_TYPE_INACTIVE" };
   }
 
-  //  Attempt to insert (unique constraint prevents duplicates)
+
   const activityId = nanoid();
 
-  try {
-    await db.insert(userActivities).values({
+  
+    const results=await db.insert(userActivities).values({
       id: activityId,
       userId,
       activityTypeId: activityType.id,
       referenceId: referenceId ?? null,
       referenceType: referenceType ?? null,
       xpAwarded: activityType.xpValue,
-    });
-  } catch (error: unknown) {
-    // Check for unique constraint violation
-    if (
-      error instanceof Error &&
-      error.message.includes("UNIQUE constraint failed")
-    ) {
-      return { success: false, error: "ALREADY_AWARDED" };
-    }
-    console.log(error);//add a loogggggger
-    throw error;
-  }
+    }).onConflictDoNothing().returning();
+ 
 
-  //  Invalidate XP cache (delete the cached value)
+  if (results.length === 0) {
+    //  No rows inserted - already awarded
+    return { success: false, error: "ALREADY_AWARDED" };
+  }
+  //  Invalidate XP cache 
   await db.delete(userXpCache).where(eq(userXpCache.userId, userId));
 
   return {
@@ -77,7 +71,7 @@ export async function awardActivity(
  * Get user's total XP (cache-aside pattern: check cache, recalculate if missing)
  */
 export async function getUserXp(userId: string): Promise<number> {
-  //  Check cache
+
   const cached = await db
     .select()
     .from(userXpCache)
@@ -88,7 +82,7 @@ export async function getUserXp(userId: string): Promise<number> {
     return cached.totalXp;
   }
 
-  //  Cache miss - recalculate and cache
+
   return recalculateUserXp(userId);
 }
 
@@ -116,6 +110,7 @@ export async function recalculateUserXp(userId: string): Promise<number> {
     .onConflictDoUpdate({
       target: userXpCache.userId,
       set: {
+
         totalXp,
         lastCalculatedAt: new Date(),
       },

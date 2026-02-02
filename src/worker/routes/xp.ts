@@ -23,7 +23,7 @@ app.get("/xp", async (c) => {
 app.get("/checkins", async (c) => {
   const user = c.get("user");
   const checkins = await getUserCheckins(user.id);
-  return c.json(checkins);
+  return c.json({checkins});
 });
 
 export default app;
