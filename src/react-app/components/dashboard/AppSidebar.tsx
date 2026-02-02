@@ -15,6 +15,7 @@ import {
   User,
   Settings,
   Shield,
+  CalendarCheck,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
 import { useAuth } from "@/providers/auth-context";
@@ -28,7 +29,10 @@ export function AppSidebar() {
     // { to: "/projects", label: "Projects", icon: FolderKanban },
     { to: "/calendar", label: "Calendar", icon: Calendar },
     ...(isAdmin
-      ? [{ to: "/admin", label: "Admin", icon: Shield }]
+      ? [
+          { to: "/admin", label: "Admin", icon: Shield },
+          { to: "/admin/events", label: "Events", icon: CalendarCheck },
+        ]
       : []),
     { to: "/profile", label: "Profile", icon: User },
     { to: "/settings", label: "Settings", icon: Settings },

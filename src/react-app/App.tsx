@@ -12,6 +12,9 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import Settings from "@/pages/Settings";
 import Calendar from "@/pages/Calendar";
 import Admin from "@/pages/Admin";
+import AdminEvents from "@/pages/AdminEvents";
+import CheckinSuccess from "@/pages/CheckinSuccess";
+import CheckinError from "@/pages/CheckinError";
 
 function App() {
   return (
@@ -60,7 +63,12 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
           </Route>
+
+          {/* Check-in result pages (no auth required - they show result after redirect) */}
+          <Route path="/checkin/success" element={<CheckinSuccess />} />
+          <Route path="/checkin/error" element={<CheckinError />} />
         </Routes>
       </AuthProvider>
     </ThemeProvider>
