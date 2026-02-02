@@ -43,7 +43,7 @@ export function useEvents() {
           throw new Error("Failed to fetch events");
         }
         const data = await response.json();
-        setEvents((data || []).map(parseEvent));
+        setEvents((data.events || []).map(parseEvent));
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {
@@ -193,7 +193,7 @@ export function useEventQR(eventId: string | null) {
       }
       const data = await response.json();
       setQrData({
-        ...data,
+        ...data.qrData,
         expiresAt: new Date(data.expiresAt),
       });
     } catch (err) {
@@ -251,7 +251,7 @@ export function useEventAttendees(eventId: string | null) {
         }
         const data = await response.json();
         setAttendees(
-          (data || []).map((a: Record<string, unknown>) => ({
+          (data.attendees || []).map((a: Record<string, unknown>) => ({
             ...a,
             checkedInAt: new Date(a.checkedInAt as string),
           }))

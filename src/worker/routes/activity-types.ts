@@ -15,7 +15,7 @@ app.use("*", authMiddleware, adminMiddleware);
  */
 app.get("/", async (c) => {
   const types = await db.select().from(activityTypes).all();
-  return c.json(types);
+  return c.json({types});
 });
 
 /**
@@ -33,7 +33,7 @@ app.get("/:id", async (c) => {
     return c.json({ error: "Activity type not found" }, 404);
   }
 
-  return c.json(activityType);
+  return c.json({activityType});
 });
 
 /**
@@ -75,7 +75,7 @@ app.patch("/:id", async (c) => {
     .where(eq(activityTypes.id, id))
     .get();
 
-  return c.json(updated);
+  return c.json({updated});
 });
 
 export default app;

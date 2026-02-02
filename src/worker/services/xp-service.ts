@@ -42,26 +42,21 @@ export async function awardActivity(
   //  Attempt to insert (unique constraint prevents duplicates)
   const activityId = nanoid();
 
-  try {
-    await db.insert(userActivities).values({
+  
+    const results=await db.insert(userActivities).values({
       id: activityId,
       userId,
       activityTypeId: activityType.id,
       referenceId: referenceId ?? null,
       referenceType: referenceType ?? null,
       xpAwarded: activityType.xpValue,
-    });
-  } catch (error: unknown) {
-    // Check for unique constraint violation
-    if (
-      error instanceof Error &&
-      error.message.includes("UNIQUE constraint failed")
-    ) {
-      return { success: false, error: "ALREADY_AWARDED" };
-    }
-    throw error;
-  }
+    }).onConflictDoNothing().returning();
+ 
 
+  if (results.length === 0) {
+    //  No rows inserted - already awarded
+    return { success: false, error: "ALREADY_AWARDED" };
+  }
   //  Invalidate XP cache (delete the cached value)
   await db.delete(userXpCache).where(eq(userXpCache.userId, userId));
 
