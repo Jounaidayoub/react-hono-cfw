@@ -1,10 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/providers/auth-context";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { SessionCard } from "@/components/dashboard/SessionCard";
 import { AchievementItem } from "@/components/dashboard/AchievementItem";
-import { Zap, Trophy, Flame, CheckCircle, Code, Plus } from "lucide-react";
+import { useUserDashboardData } from "@/hooks/use-xp";
+import { Zap, Trophy, Flame, CheckCircle, Code, Plus, MapPin } from "lucide-react";
 
 // Mock data - will be replaced with API calls
 const mockSessions = [
@@ -54,16 +57,26 @@ const mockAchievements = [
 
 export default function Dashboard() {
   const { profile, session } = useAuth();
+  const { totalXp, checkins, isLoading } = useUserDashboardData();
 
   const firstName =
     profile?.firstName || session?.user?.name?.split(" ")[0] || "Builder";
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  };
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Ready to build, <span className="text-primary">{firstName}{" "}</span>?
+          Ready to build, <span className="text-primary">{firstName} </span>?
         </h1>
         <p className="text-muted-foreground mt-1 text-lg">
           Your robotics journey continues. Here's your daily briefing.
@@ -75,8 +88,8 @@ export default function Dashboard() {
         <StatsCard
           icon={<Zap className="h-4 w-4" />}
           label="Total XP"
-          value="2,400"
-          subtext="↗ +150 this week"
+          value={isLoading ? "..." : totalXp.toLocaleString()}
+          subtext={`${checkins.length} check-ins`}
         />
         <StatsCard
           icon={<Trophy className="h-4 w-4" />}
@@ -169,8 +182,51 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom Row: Achievements + Recommendations */}
+      {/* Bottom Row: Check-ins + Recommendations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Recent Check-ins */}
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Recent Check-ins
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : checkins.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                No check-ins yet. Attend an event to earn XP!
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {checkins.slice(0, 5).map((checkin) => (
+                  <div
+                    key={checkin.id}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
+                    <div>
+                      <p className="font-medium">{checkin.eventName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(checkin.checkedInAt)}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-primary">
+                      +{checkin.xpAwarded} XP
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Achievements */}
         <Card className="bg-card/50 border-border/50">
           <CardHeader>
             <CardTitle>Recent Achievements</CardTitle>
@@ -194,19 +250,6 @@ export default function Dashboard() {
                 xpReward={300}
               />
             ))}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card/50 border-border/50">
-          <CardHeader>
-            <CardTitle>Recommended for you</CardTitle>
-          </CardHeader>
-          <CardContent className="h-full min-h-[200px] flex flex-col items-center justify-center gap-3">
-            <div className="text-muted-foreground text-center">
-              <p>Advanced Robotics Logic</p>
-              <div className="text-xs mt-1">based on your recent activity</div>
-            </div>
-            <Button variant="outline">Explore Course</Button>
           </CardContent>
         </Card>
       </div>

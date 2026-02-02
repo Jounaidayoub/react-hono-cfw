@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { Outlet, useNavigate } from "react-router";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/providers/auth-context";
+import { useUserXP } from "@/hooks/use-xp";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, LogOut, Settings, Shield, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Bell, LogOut, Settings, Shield, User, Zap } from "lucide-react";
 import { ModeToggle } from "@/components/dashboard/Theme-toggle";
 
 export default function DashboardLayout() {
   const { profile, session, signOut, isAdmin } = useAuth();
+  const { totalXp } = useUserXP();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -56,6 +59,13 @@ export default function DashboardLayout() {
               <span className="hidden sm:inline">Admin</span>
             </Button>
           )}
+
+          {/* XP Display */}
+          <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold tabular-nums">{totalXp.toLocaleString()}</span>
+            <span className="text-muted-foreground text-xs">XP</span>
+          </Badge>
 
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
