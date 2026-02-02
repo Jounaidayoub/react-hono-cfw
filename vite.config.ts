@@ -1,16 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { cloudflare } from "@cloudflare/vite-plugin";
-import path from "path"
-import tailwindcss from "@tailwindcss/vite"
+import path from "path";
+import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   server: {
     port: 5174,
   },
   plugins: [react(), cloudflare(), tailwindcss()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src/react-app"),
-    },
+    alias: [
+      {
+        find: "@/lib/schemas",
+        replacement: path.resolve(__dirname, "./src/lib/schemas"),
+      },
+      {
+        find: "@",
+        replacement: path.resolve(__dirname, "./src/react-app"),
+      },
+    ],
   },
 });
