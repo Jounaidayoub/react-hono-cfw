@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import type {
-  Event,
-  EventFormData,
-  QRData,
-  Attendee,
+import {
+  type Event,
+  type EventFormData,
+  type QRData,
+  type Attendee,
+  qrDataSchema,
 } from "@/lib/schemas/events";
+import { safeParse } from "zod";
 
 // Parse event dates from API response
 function parseEvent(event: Record<string, unknown>): Event {
@@ -92,7 +94,7 @@ export function useCreateEvent() {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   return { createEvent, isLoading };
@@ -137,7 +139,7 @@ export function useUpdateEvent() {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   return { updateEvent, isLoading };
@@ -192,10 +194,14 @@ export function useEventQR(eventId: string | null) {
         throw new Error(errorData.error || "Failed to fetch QR code");
       }
       const data = await response.json();
-      setQrData({
-        ...data.qrData,
-        expiresAt: new Date(data.expiresAt),
-      });
+      const parsed = safeParse(qrDataSchema, data.qrData);
+      if (!parsed.success) {
+        throw new Error("Invalid QR data format");
+      }
+      // debugger;
+      setQrData(
+        parsed.data,);
+      // debugger;
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Unknown error"));
     } finally {
@@ -254,7 +260,7 @@ export function useEventAttendees(eventId: string | null) {
           (data.attendees || []).map((a: Record<string, unknown>) => ({
             ...a,
             checkedInAt: new Date(a.checkedInAt as string),
-          }))
+          })),
         );
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
