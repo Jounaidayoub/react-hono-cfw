@@ -59,6 +59,7 @@ export async function awardActivity(
     ) {
       return { success: false, error: "ALREADY_AWARDED" };
     }
+    console.log(error);//add a loogggggger
     throw error;
   }
 
