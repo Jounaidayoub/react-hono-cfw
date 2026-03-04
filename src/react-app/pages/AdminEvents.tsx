@@ -35,7 +35,7 @@ import {
 } from "@/lib/schemas/events";
 
 export default function AdminEvents() {
-  const { events, isLoading, refetch } = useEvents();
+  const { events, isLoading } = useEvents();
   const { createEvent, isLoading: isCreating } = useCreateEvent();
   const { updateEvent, isLoading: isUpdating } = useUpdateEvent();
   const { deleteEvent, isLoading: isDeleting } = useDeleteEvent();
@@ -74,11 +74,11 @@ export default function AdminEvents() {
 
   const handleFormSubmit = async (data: EventFormData) => {
     if (selectedEvent) {
-      const result = await updateEvent(selectedEvent.id, data);
-      if (result) refetch();
+      await updateEvent(selectedEvent.id, data);
+
     } else {
-      const result = await createEvent(data);
-      if (result) refetch();
+      await createEvent(data);
+
     }
   };
 
@@ -86,7 +86,7 @@ export default function AdminEvents() {
     if (selectedEvent) {
       const success = await deleteEvent(selectedEvent.id);
       if (success) {
-        refetch();
+
         setDeleteOpen(false);
       }
     }

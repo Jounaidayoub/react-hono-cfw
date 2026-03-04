@@ -20,28 +20,24 @@ interface QRCodeDialogProps {
 
 export function QRCodeDialog({ open, onOpenChange, event }: QRCodeDialogProps) {
   const { qrData, isLoading, error } = useEventQR(open ? event?.id ?? null : null);
-  const [countdown, setCountdown] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
 
   // Update countdown every second
   useEffect(() => {
     if (!qrData) {
-      setCountdown(0);
       return;
     }
 
-    const updateCountdown = () => {
-      const now = new Date();
-      const remaining = Math.max(
-        0,
-        Math.floor((qrData.expiresAt.getTime() - now.getTime()) / 1000)
-      );
-      setCountdown(remaining);
-    };
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
 
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [qrData]);
+
+  const countdown = qrData
+    ? Math.max(0, Math.floor((qrData.expiresAt.getTime() - now) / 1000))
+    : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

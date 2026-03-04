@@ -3,11 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { User } from "@/types/user";
+import type { AppUserWithRole } from "@/hooks/use-users";
 
 export function getUserColumns(
-  onUserClick: (user: User) => void,
-): ColumnDef<User>[] {
+  onUserClick: (user: AppUserWithRole) => void,
+): ColumnDef<AppUserWithRole>[] {
   return [
     {
       id: "select",

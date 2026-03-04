@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { useAuth, type Profile as ProfileData } from "@/providers/auth-context";
+import { useAuth } from "@/providers/auth-context";
+import type { UserProfile } from "@/lib/schemas/index";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ export default function Profile() {
 }
 
 interface ProfileDetailsProps {
-  profile: ProfileData;
+  profile: UserProfile;
   sessionEmail?: string | null;
   sessionImage?: string | null;
   onEditProfile: () => void;

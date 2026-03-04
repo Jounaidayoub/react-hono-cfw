@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Drawer,
   DrawerClose,
@@ -19,14 +20,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { User } from "@/types/user";
+import { adminApi } from "@/api/admin";
+import { authClient } from "@/lib/auth-client";
+import type { AppRole, AppUserWithRole } from "@/hooks/use-users";
+import type { UserProfile } from "@/lib/schemas/index";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 
 interface UserDetailsDrawerProps {
-  user: User | null;
+  user: AppUserWithRole | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRoleUpdate: (userId: string, newRole: "user" | "admin") => Promise<void>;
+  onRoleUpdate: (userId: string, newRole: AppRole) => Promise<void>;
+  onUserDeleted?: () => void;
 }
 
 export function UserDetailsDrawer({
@@ -34,16 +49,35 @@ export function UserDetailsDrawer({
   open,
   onOpenChange,
   onRoleUpdate,
+  onUserDeleted,
 }: UserDetailsDrawerProps) {
   const isMobile = useIsMobile();
-  const [selectedRole, setSelectedRole] = useState<"user" | "admin">("user");
+  const [selectedRole, setSelectedRole] = useState<AppRole>(
+    "user"
+  );
   const [isSaving, setIsSaving] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setSelectedRole(user.role);
+        setSelectedRole(user.role ?? "user");
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user && open) {
+      setIsLoadingProfile(true);
+      adminApi
+        .getUserProfile(user.id)
+        .then(setProfile)
+        .catch((err) => console.error("Failed to fetch profile:", err))
+        .finally(() => setIsLoadingProfile(false));
+    } else {
+      setProfile(null);
+    }
+  }, [user, open]);
 
   if (!user) return null;
 
@@ -56,6 +90,37 @@ export function UserDetailsDrawer({
       console.error("Failed to update role:", error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePaymentChange = async (checked: boolean) => {
+    if (!user) return;
+    const status = checked ? "paid" : "pending";
+    try {
+      const updated = await adminApi.updatePaymentStatus(user.id, status);
+      setProfile(updated);
+      toast.success(`User marked as ${status}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error updating payment status";
+      toast.error(message);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user) return;
+
+    try {
+      const res = await authClient.admin.removeUser({ userId: user.id });
+      if (res.error) {
+        toast.error(res.error.message || "Failed to delete user");
+      } else {
+        toast.success("User deleted successfully");
+        setDeleteDialogOpen(false);
+        onOpenChange(false);
+        onUserDeleted?.();
+      }
+    } catch {
+      toast.error("Error deleting user");
     }
   };
 
@@ -168,9 +233,49 @@ export function UserDetailsDrawer({
               </Badge>
             </div>
           </div>
+
+          {/* Payment Status Section */}
+          <div>
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+              Payment Status
+            </Label>
+            <div className="mt-3 flex items-center space-x-2">
+              {isLoadingProfile ? (
+                <span className="text-sm text-muted-foreground">
+                  Loading...
+                </span>
+              ) : profile ? (
+                <>
+                  <Checkbox
+                    id="payment-status"
+                    checked={profile.paymentStatus === "paid"}
+                    onCheckedChange={handlePaymentChange}
+                  />
+                  <label
+                    htmlFor="payment-status"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {profile.paymentStatus === "paid"
+                      ? "Paid"
+                      : "Pending Payment"}
+                  </label>
+                </>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  No profile data available
+                </span>
+              )}
+            </div>
+            {profile && profile.feesAmount && (
+              <p className="text-xs text-muted-foreground mt-1 ml-6">
+                Fee: {profile.feesAmount}
+              </p>
+            )}
+          </div>
+
         </div>
 
-        <DrawerFooter className="border-t pt-4">
+        <DrawerFooter className="border-t pt-4 gap-2">
           <Button onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving ? (
               <span className="flex items-center gap-2">
@@ -186,8 +291,35 @@ export function UserDetailsDrawer({
               Cancel
             </Button>
           </DrawerClose>
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            Delete User
+          </Button>
         </DrawerFooter>
       </DrawerContent>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {user?.name}? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteUser}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Drawer>
   );
 }

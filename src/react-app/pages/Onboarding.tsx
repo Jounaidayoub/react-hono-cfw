@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ApiError } from "@/api";
+import { profileApi } from "@/api/profile";
 import { useAuth } from "@/providers/auth-context";
 
 const years = [
@@ -102,40 +104,18 @@ export default function Onboarding() {
   
 
   const watchStatus = form.watch("status");
-
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await fetch("/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (res.ok) {
-        await refreshProfile();
-        navigate("/profile", { replace: true });
-      } else {
-        // TODO : we need a better error hadnellng herer , in the whole react app actually lol
-
-        const errorData = await res.json();
-        let errorMessage = errorData.error || "Failed to save profile";
-        
-        // Format validation errors if details are present
-        if (errorData.details && Array.isArray(errorData.details)) {
-          const validationErrors = errorData.details
-            .map((detail: { message?: string; path?: string[] }) => {
-              const path = detail.path?.join(".") || "field";
-              return `${path}: ${detail.message || "Invalid value"}`;
-            })
-            .join(", ");
-          errorMessage = validationErrors || errorMessage;
-        }
-        
-        toast.error(errorMessage);
-      }
+      await profileApi.upsert(data);
+      await refreshProfile();
+      navigate("/profile", { replace: true });
     } catch (error) {
       console.error(error);
-      toast.error("Network error. Please try again.");
+      if (error instanceof ApiError) {
+        toast.error(error.message || "Failed to save profile");
+      } else {
+        toast.error("Network error. Please try again.");
+      }
     }
   };
 
