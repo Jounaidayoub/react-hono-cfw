@@ -69,7 +69,6 @@ export const eventFormSchema = z.object({
   path: ["endsAt"],
 });
 
-export type EventSelect = z.infer<typeof eventSelectSchema>;
 export type EventInsertZod = z.infer<typeof eventInsertSchema>;
 export type EventFormData = z.infer<typeof eventFormSchema>;
 
