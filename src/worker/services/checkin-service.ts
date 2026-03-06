@@ -1,26 +1,17 @@
 import { eq, inArray } from "drizzle-orm";
+import { err, ok } from "neverthrow";
 import { db } from "../../lib/db";
 import { userActivities, events } from "../../lib/schemas";
-import { awardActivity, getUserXp } from "./xp-service";
-import { getEventById, isEventActive } from "./event-service";
+import { isEventActive } from "./event-service";
+import { findEventById } from "../repositories/event-repository";
+import { awardCheckinXp, getUserTotalXp } from "../repositories/checkin-repository";
+import type { DomainResultAsync } from "../domain/result";
 
-export type CheckinResult =
-  | {
-      success: true;
-      xpAwarded: number;
-      eventName: string;
-      totalXp: number;
-    }
-  | {
-      success: false;
-      error:
-        | "NOT_AUTHENTICATED"
-        | "EVENT_NOT_FOUND"
-        | "EVENT_NOT_ACTIVE"
-        | "INVALID_CODE"
-        | "CODE_EXPIRED"
-        | "ALREADY_CHECKED_IN";
-    };
+export type ProcessCheckinSuccess = {
+  xpAwarded: number;
+  eventName: string;
+  totalXp: number;
+};
 
 export type UserCheckin = {
   activityId: string;
@@ -33,59 +24,55 @@ export type UserCheckin = {
 /**
  * Process a check-in attempt.
  * Validates the QR code and awards XP if valid.
+ *
+ * @param userId - Authenticated user ID (auth check must be done before calling this)
+ * @param eventId - The event to check in to
+ * @param qrCode - The QR code secret scanned by the user
  */
-export async function processCheckin(
-  userId: string | null,
+export function processCheckin(
+  userId: string,
   eventId: string,
   qrCode: string
-): Promise<CheckinResult> {
-  if (!userId) {
-    return { success: false, error: "NOT_AUTHENTICATED" };
-  }
+): DomainResultAsync<ProcessCheckinSuccess> {
+  return findEventById(eventId)
+    .andThen((event) => {
+      if (!event) {
+        return err({ tag: "EVENT_NOT_FOUND" as const, eventId });
+      }
 
-  const event = await getEventById(eventId);
-  if (!event) {
-    return { success: false, error: "EVENT_NOT_FOUND" };
-  }
+      const now = new Date();
 
-  if (!isEventActive(event)) {
-    return { success: false, error: "EVENT_NOT_ACTIVE" };
-  }
+      if (!isEventActive(event)) {
+        return err({ tag: "EVENT_NOT_ACTIVE" as const, eventId, now });
+      }
 
-  if (event.currentQrSecret !== qrCode) {
-    return { success: false, error: "INVALID_CODE" };
-  }
+      if (event.currentQrSecret !== qrCode) {
+        return err({ tag: "INVALID_QR_CODE" as const, eventId });
+      }
 
-  //  Validate QR code hasn't expired
-  if (!event.qrExpiresAt || event.qrExpiresAt <= new Date()) {
-    return { success: false, error: "CODE_EXPIRED" };
-  }
+      if (!event.qrExpiresAt || event.qrExpiresAt <= now) {
+        return err({
+          tag: "QR_CODE_EXPIRED" as const,
+          eventId,
+          expiredAt: event.qrExpiresAt ?? null,
+        });
+      }
 
-  //  Award XP ( it will handle duplicate check-in attempts)
-  const awardResult = await awardActivity(
-    userId,
-    "MEETUP_ATTENDANCE",
-    eventId,
-    "event"
-  );
-
-  if (!awardResult.success) {
-    if (awardResult.error === "ALREADY_AWARDED") {
-      return { success: false, error: "ALREADY_CHECKED_IN" };
-    }
-    // Other errors shouldn't happen for valid event check-ins
-    throw new Error(`Unexpected award error: ${awardResult.error}`);
-  }
-
-  //  Get updated total XP
-  const totalXp = await getUserXp(userId);
-
-  return {
-    success: true,
-    xpAwarded: awardResult.xpAwarded,
-    eventName: event.name,
-    totalXp,
-  };
+      return ok(event);
+    })
+    .andThen((event) =>
+      awardCheckinXp(userId, eventId).map((xpAwarded) => ({
+        xpAwarded,
+        eventName: event.name,
+      }))
+    )
+    .andThen(({ xpAwarded, eventName }) =>
+      getUserTotalXp(userId).map((totalXp) => ({
+        xpAwarded,
+        eventName,
+        totalXp,
+      }))
+    );
 }
 
 /**

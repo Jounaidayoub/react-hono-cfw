@@ -13,6 +13,7 @@ import {
   getEventAttendees,
 } from "../services/event-service";
 import { processCheckin } from "../services/checkin-service";
+import { mapDomainErrorToCheckinRedirect } from "../http/map-domain-error-to-checkin-redirect";
 
 const app = createHonoApp();
 
@@ -164,17 +165,15 @@ app.get("/:eventId/checkin", async (c) => {
   // Process the check-in
   const result = await processCheckin(userId, eventId, code);
 
-  if (!result.success) {
-    const errorUrl = new URL("/checkin/error", c.req.url);
-    errorUrl.searchParams.set("error", result.error);
-    return c.redirect(errorUrl.toString());
+  if (result.isErr()) {
+    return c.redirect(mapDomainErrorToCheckinRedirect(result.error));
   }
 
   // Success - redirect to success page
   const successUrl = new URL("/checkin/success", c.req.url);
-  successUrl.searchParams.set("xp", result.xpAwarded.toString());
-  successUrl.searchParams.set("event", result.eventName);
-  successUrl.searchParams.set("total", result.totalXp.toString());
+  successUrl.searchParams.set("xp", result.value.xpAwarded.toString());
+  successUrl.searchParams.set("event", result.value.eventName);
+  successUrl.searchParams.set("total", result.value.totalXp.toString());
   return c.redirect(successUrl.toString());
 });
 
