@@ -25,8 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ApiError } from "@/api";
-import { profileApi } from "@/api/profile";
+import {
+  isUpsertProfileApiError,
+  profileApi,
+  type UpsertProfileApiError,
+} from "@/api/profile";
 import { useAuth } from "@/providers/auth-context";
 
 const years = [
@@ -83,6 +86,21 @@ const formSchema = z
 
 type FormData = z.infer<typeof formSchema>;
 
+function getUpsertProfileErrorMessage(error: UpsertProfileApiError): string {
+  switch (error.type) {
+    case "VALIDATION_ERROR":
+      return "Please review your profile details and try again.";
+    case "PROFILE_CREATE_FAILED":
+      return "Failed to create profile.";
+    case "PROFILE_UPDATE_FAILED":
+      return "Failed to update profile.";
+    default: {
+      const exhaustiveError: never = error.type;
+      return exhaustiveError;
+    }
+  }
+}
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
@@ -111,8 +129,8 @@ export default function Onboarding() {
       navigate("/profile", { replace: true });
     } catch (error) {
       console.error(error);
-      if (error instanceof ApiError) {
-        toast.error(error.message || "Failed to save profile");
+      if (isUpsertProfileApiError(error)) {
+        toast.error(getUpsertProfileErrorMessage(error));
       } else {
         toast.error("Network error. Please try again.");
       }

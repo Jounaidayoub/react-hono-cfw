@@ -1,25 +1,27 @@
 import type { ApiResponse } from "../../lib/types";
 
-export class ApiError extends Error {
-	public readonly code: string;
-	public readonly type: string;
-	public readonly details?: unknown;
+export type ApiClientError<TType extends string = string> = {
+	type: TType;
+	status: number;
+	details?: unknown;
+};
 
-	constructor(
-		type: string,
-		public status?: number,
-		details?: unknown,
-	) {
-		super(type);
-		this.name = "ApiError";
-		this.type = type;
-		this.code = type;
-		this.details = details;
-	}
-}
+export type ValidationApiError = ApiClientError<"VALIDATION_ERROR">;
 
 function isObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
+}
+
+export function isApiError<TType extends string>(
+	value: unknown,
+	types: readonly TType[],
+): value is ApiClientError<TType> {
+	return (
+		isObject(value) &&
+		typeof value.type === "string" &&
+		typeof value.status === "number" &&
+		types.includes(value.type as TType)
+	);
 }
 
 function getErrorType(value: unknown): string | undefined {
@@ -38,6 +40,9 @@ function getErrorType(value: unknown): string | undefined {
 	return undefined;
 }
 
+// TODO: Refactor apiFetch to return a Result<T, E> type to avoid throwing exceptions
+// This will align with the worker implementation and force exhaustive error handling
+// on the client side using discriminated unions and switch-case on error types.
 export async function apiFetch<T>(
 	url: string,
 	options?: RequestInit,
@@ -62,11 +67,11 @@ export async function apiFetch<T>(
 		const details =
 			isObject(json) && "details" in json ? json.details : undefined;
 
-		throw new ApiError(
-			getErrorType(json) ?? "UNKNOWN_ERROR",
-			response.status,
-			details,
-		);
+		throw {
+			type: getErrorType(json) ?? "UNKNOWN_ERROR",
+			status: response.status,
+			...(details === undefined ? {} : { details }),
+		} satisfies ApiClientError;
 	}
 
 	if (json === undefined) {

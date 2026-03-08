@@ -9,8 +9,10 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { ApiError } from "@/api";
-import { profileApi } from "@/api/profile";
+import {
+  isGetProfileApiError,
+  profileApi,
+} from "@/api/profile";
 import { authClient } from "@/lib/auth-client";
 import type { UserProfile } from "@/lib/schemas/index";
 
@@ -73,10 +75,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      if (error instanceof ApiError && error.status === 404) {
-        setProfile(null);
-        setNeedsProfile(true);
-        return;
+      if (isGetProfileApiError(error)) {
+        switch (error.type) {
+          case "PROFILE_NOT_FOUND":
+            setProfile(null);
+            setNeedsProfile(true);
+            return;
+          default: {
+            const exhaustiveError: never = error.type;
+            return exhaustiveError;
+          }
+        }
       }
 
       const errorObj = error as Error;

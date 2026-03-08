@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch } from "../client";
+import { apiFetch } from "../client";
 
 describe("apiFetch", () => {
 	afterEach(() => {
@@ -22,7 +22,7 @@ describe("apiFetch", () => {
 		expect(result).toEqual({ id: "event_1", name: "Weekly Meetup" });
 	});
 
-	it("throws ApiError from simplified error responses", async () => {
+	it("throws plain typed objects from simplified error responses", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn().mockResolvedValue(
@@ -33,15 +33,16 @@ describe("apiFetch", () => {
 			),
 		);
 
-		await expect(apiFetch("/api/events/missing")).rejects.toEqual(
-			expect.objectContaining<ApiError>({
-				name: "ApiError",
-				message: "EVENT_NOT_FOUND",
+		try {
+			await apiFetch("/api/events/missing");
+			expect.unreachable("Expected apiFetch to throw");
+		} catch (error) {
+			expect(error).toEqual({
 				type: "EVENT_NOT_FOUND",
-				code: "EVENT_NOT_FOUND",
 				status: 404,
 				details: { id: "missing" },
-			}),
-		);
+			});
+			expect(error).not.toBeInstanceOf(Error);
+		}
 	});
 });

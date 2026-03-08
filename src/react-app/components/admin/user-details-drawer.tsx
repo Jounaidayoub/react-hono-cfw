@@ -20,7 +20,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { adminApi } from "@/api/admin";
+import {
+  adminApi,
+  isGetAdminUserProfileApiError,
+  isUpdatePaymentStatusApiError,
+  type GetAdminUserProfileApiError,
+  type UpdatePaymentStatusApiError,
+} from "@/api/admin";
 import { authClient } from "@/lib/auth-client";
 import type { AppRole, AppUserWithRole } from "@/hooks/use-users";
 import type { UserProfile } from "@/lib/schemas/index";
@@ -44,6 +50,36 @@ interface UserDetailsDrawerProps {
   onUserDeleted?: () => void;
 }
 
+function getAdminUserProfileErrorMessage(
+  error: GetAdminUserProfileApiError,
+): string {
+  switch (error.type) {
+    case "ADMIN_PROFILE_NOT_FOUND":
+      return "This user has not completed onboarding yet.";
+    default: {
+      const exhaustiveError: never = error.type;
+      return exhaustiveError;
+    }
+  }
+}
+
+function getUpdatePaymentStatusErrorMessage(
+  error: UpdatePaymentStatusApiError,
+): string {
+  switch (error.type) {
+    case "VALIDATION_ERROR":
+      return "Invalid payment status.";
+    case "ADMIN_PROFILE_NOT_FOUND":
+      return "This user has not completed onboarding yet.";
+    case "ADMIN_PAYMENT_STATUS_UPDATE_FAILED":
+      return "Failed to update payment status.";
+    default: {
+      const exhaustiveError: never = error.type;
+      return exhaustiveError;
+    }
+  }
+}
+
 export function UserDetailsDrawer({
   user,
   open,
@@ -59,6 +95,7 @@ export function UserDetailsDrawer({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [profileErrorMessage, setProfileErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -69,13 +106,24 @@ export function UserDetailsDrawer({
   useEffect(() => {
     if (user && open) {
       setIsLoadingProfile(true);
+      setProfileErrorMessage(null);
       adminApi
         .getUserProfile(user.id)
         .then(setProfile)
-        .catch((err) => console.error("Failed to fetch profile:", err))
+        .catch((error) => {
+          console.error("Failed to fetch profile:", error);
+
+          if (isGetAdminUserProfileApiError(error)) {
+            setProfileErrorMessage(getAdminUserProfileErrorMessage(error));
+            return;
+          }
+
+          setProfileErrorMessage("Failed to fetch profile.");
+        })
         .finally(() => setIsLoadingProfile(false));
     } else {
       setProfile(null);
+      setProfileErrorMessage(null);
     }
   }, [user, open]);
 
@@ -99,10 +147,15 @@ export function UserDetailsDrawer({
     try {
       const updated = await adminApi.updatePaymentStatus(user.id, status);
       setProfile(updated);
+      setProfileErrorMessage(null);
       toast.success(`User marked as ${status}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Error updating payment status";
-      toast.error(message);
+      if (isUpdatePaymentStatusApiError(error)) {
+        toast.error(getUpdatePaymentStatusErrorMessage(error));
+        return;
+      }
+
+      toast.error("Error updating payment status");
     }
   };
 
@@ -260,6 +313,10 @@ export function UserDetailsDrawer({
                       : "Pending Payment"}
                   </label>
                 </>
+              ) : profileErrorMessage ? (
+                <span className="text-sm text-muted-foreground">
+                  {profileErrorMessage}
+                </span>
               ) : (
                 <span className="text-sm text-muted-foreground">
                   No profile data available
