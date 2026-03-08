@@ -42,7 +42,7 @@ describe("checkin service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("UNAUTHORIZED");
+			expect(result.error.type).toBe("XP_NOT_AUTHENTICATED");
 		}
 	});
 

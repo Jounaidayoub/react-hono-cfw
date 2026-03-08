@@ -33,7 +33,7 @@ describe("admin service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("NOT_FOUND");
+			expect(result.error.type).toBe("ADMIN_PROFILE_NOT_FOUND");
 		}
 	});
 

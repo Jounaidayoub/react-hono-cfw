@@ -38,7 +38,7 @@ describe("xp service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("NOT_FOUND");
+			expect(result.error.type).toBe("XP_ACTIVITY_TYPE_NOT_FOUND");
 		}
 	});
 
@@ -59,7 +59,7 @@ describe("xp service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("CONFLICT");
+			expect(result.error.type).toBe("XP_ACTIVITY_ALREADY_AWARDED");
 		}
 	});
 });

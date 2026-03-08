@@ -9,7 +9,14 @@ import {
 	type EventInsert,
 	type EventUpdate,
 } from "../../../lib/schemas";
-import { err, ok, type Result } from "../../../lib/types";
+import { error, ok, type Result } from "../../../lib/types";
+import type {
+	CreateEventError,
+	DeleteEventError,
+	GetActiveQrCodeError,
+	GetEventByIdError,
+	UpdateEventError,
+} from "./errors";
 
 export type QrCodeData = {
 	qrContent: string;
@@ -29,7 +36,7 @@ export type EventAttendee = {
 export async function createEvent(
 	data: Omit<EventInsert, "id" | "createdAt" | "updatedAt" | "createdBy">,
 	createdBy: string,
-): Promise<Result<Event>> {
+): Promise<Result<Event, CreateEventError>> {
 	const id = nanoid();
 
 	await db.insert(events).values({
@@ -41,13 +48,15 @@ export async function createEvent(
 	const created = await db.select().from(events).where(eq(events.id, id)).get();
 
 	if (!created) {
-		return err("INTERNAL_ERROR", "Failed to create event");
+		return error({ type: "EVENT_CREATE_FAILED" });
 	}
 
 	return ok(created);
 }
 
-export async function getEventById(eventId: string): Promise<Result<Event>> {
+export async function getEventById(
+	eventId: string,
+): Promise<Result<Event, GetEventByIdError>> {
 	const event = await db
 		.select()
 		.from(events)
@@ -55,18 +64,18 @@ export async function getEventById(eventId: string): Promise<Result<Event>> {
 		.get();
 
 	if (!event) {
-		return err("NOT_FOUND", "Event not found");
+		return error({ type: "EVENT_NOT_FOUND" });
 	}
 
 	return ok(event);
 }
 
-export async function listEvents(): Promise<Result<Event[]>> {
+export async function listEvents(): Promise<Result<Event[], never>> {
 	const data = await db.select().from(events).orderBy(events.startsAt).all();
 	return ok(data);
 }
 
-export async function listActiveEvents(): Promise<Result<Event[]>> {
+export async function listActiveEvents(): Promise<Result<Event[], never>> {
 	const now = new Date();
 	const data = await db
 		.select()
@@ -80,7 +89,7 @@ export async function listActiveEvents(): Promise<Result<Event[]>> {
 export async function updateEvent(
 	eventId: string,
 	data: EventUpdate,
-): Promise<Result<Event>> {
+): Promise<Result<Event, UpdateEventError>> {
 	const existing = await getEventById(eventId);
 
 	if (!existing.ok) {
@@ -97,13 +106,15 @@ export async function updateEvent(
 		.returning();
 
 	if (!updated) {
-		return err("INTERNAL_ERROR", "Failed to update event");
+		return error({ type: "EVENT_UPDATE_FAILED" });
 	}
 
 	return ok(updated);
 }
 
-export async function deleteEvent(eventId: string): Promise<Result<void>> {
+export async function deleteEvent(
+	eventId: string,
+): Promise<Result<void, DeleteEventError>> {
 	const existing = await getEventById(eventId);
 
 	if (!existing.ok) {
@@ -134,7 +145,7 @@ function buildCheckinUrl(baseUrl: string, eventId: string, secret: string): stri
 export async function getActiveQrCode(
 	eventId: string,
 	baseUrl: string,
-): Promise<Result<QrCodeData>> {
+): Promise<Result<QrCodeData, GetActiveQrCodeError>> {
 	const eventResult = await getEventById(eventId);
 
 	if (!eventResult.ok) {
@@ -179,7 +190,7 @@ export async function getActiveQrCode(
 
 export async function getEventAttendees(
 	eventId: string,
-): Promise<Result<EventAttendee[]>> {
+): Promise<Result<EventAttendee[], never>> {
 	const attendees = await db
 		.select({
 			userId: userActivities.userId,

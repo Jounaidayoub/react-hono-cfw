@@ -2,7 +2,8 @@ import { eq, sum } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "../../../lib/db";
 import { activityTypes, userActivities, userXpCache } from "../../../lib/schemas";
-import { err, ok, type Result } from "../../../lib/types";
+import { error, ok, type Result } from "../../../lib/types";
+import type { AwardActivityError } from "./errors";
 
 export type AwardActivityData = {
 	xpAwarded: number;
@@ -14,7 +15,7 @@ export async function awardActivity(
 	activityTypeCode: string,
 	referenceId?: string,
 	referenceType?: string,
-): Promise<Result<AwardActivityData>> {
+): Promise<Result<AwardActivityData, AwardActivityError>> {
 	const activityType = await db
 		.select()
 		.from(activityTypes)
@@ -22,15 +23,11 @@ export async function awardActivity(
 		.get();
 
 	if (!activityType) {
-		return err("NOT_FOUND", "Activity type not found", {
-			reason: "ACTIVITY_TYPE_NOT_FOUND",
-		});
+		return error({ type: "XP_ACTIVITY_TYPE_NOT_FOUND" });
 	}
 
 	if (!activityType.isActive) {
-		return err("CONFLICT", "Activity type is inactive", {
-			reason: "ACTIVITY_TYPE_INACTIVE",
-		});
+		return error({ type: "XP_ACTIVITY_TYPE_INACTIVE" });
 	}
 
 	const activityId = nanoid();
@@ -49,9 +46,7 @@ export async function awardActivity(
 		.returning();
 
 	if (results.length === 0) {
-		return err("CONFLICT", "Activity already awarded", {
-			reason: "ALREADY_AWARDED",
-		});
+		return error({ type: "XP_ACTIVITY_ALREADY_AWARDED" });
 	}
 
 	await db.delete(userXpCache).where(eq(userXpCache.userId, userId));
@@ -62,7 +57,7 @@ export async function awardActivity(
 	});
 }
 
-export async function getUserXp(userId: string): Promise<Result<number>> {
+export async function getUserXp(userId: string): Promise<Result<number, never>> {
 	const cached = await db
 		.select()
 		.from(userXpCache)
@@ -76,7 +71,7 @@ export async function getUserXp(userId: string): Promise<Result<number>> {
 	return recalculateUserXp(userId);
 }
 
-export async function recalculateUserXp(userId: string): Promise<Result<number>> {
+export async function recalculateUserXp(userId: string): Promise<Result<number, never>> {
 	const result = await db
 		.select({ total: sum(userActivities.xpAwarded) })
 		.from(userActivities)

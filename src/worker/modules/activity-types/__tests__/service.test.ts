@@ -33,7 +33,7 @@ describe("activity-types service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("NOT_FOUND");
+			expect(result.error.type).toBe("ACTIVITY_TYPE_NOT_FOUND");
 		}
 	});
 

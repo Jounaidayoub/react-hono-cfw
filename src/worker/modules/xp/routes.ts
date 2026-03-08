@@ -1,6 +1,6 @@
 import { createHonoApp } from "../../app";
 import { authMiddleware } from "../../middleware/auth";
-import { jsonErr, jsonOk } from "../../shared/response";
+import { jsonOk } from "../../shared/response";
 import { getUserCheckins } from "./checkin-service";
 import { getUserXp } from "./service";
 
@@ -12,14 +12,22 @@ xp.get("/xp", async c => {
 	const user = c.get("user");
 	const result = await getUserXp(user.id);
 
-	return result.ok ? jsonOk(c, result.data) : jsonErr(c, result.error);
+	if (!result.ok) {
+		throw new Error("Unexpected XP result error");
+	}
+
+	return jsonOk(c, result.data);
 });
 
 xp.get("/checkins", async c => {
 	const user = c.get("user");
 	const result = await getUserCheckins(user.id);
 
-	return result.ok ? jsonOk(c, result.data) : jsonErr(c, result.error);
+	if (!result.ok) {
+		throw new Error("Unexpected checkins result error");
+	}
+
+	return jsonOk(c, result.data);
 });
 
 export default xp;

@@ -37,7 +37,7 @@ describe("events service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("NOT_FOUND");
+			expect(result.error.type).toBe("EVENT_NOT_FOUND");
 		}
 	});
 

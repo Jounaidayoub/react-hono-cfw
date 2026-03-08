@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { err, ok, type Result } from "../result";
+import { error, ok, type Result } from "../result";
 
 describe("result helpers", () => {
 	it("returns success shape from ok", () => {
@@ -10,15 +10,11 @@ describe("result helpers", () => {
 	});
 
 	it("returns error shape from err", () => {
-		const response = err("NOT_FOUND", "Missing user", { userId: "u_1" });
+		const response = error({ type: "EVENT_NOT_FOUND" as const });
 
 		expect(response).toEqual({
 			ok: false,
-			error: {
-				code: "NOT_FOUND",
-				message: "Missing user",
-				details: { userId: "u_1" },
-			},
+			error: { type: "EVENT_NOT_FOUND" },
 		});
 	});
 

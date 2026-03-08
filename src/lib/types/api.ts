@@ -1,12 +1,15 @@
-export type ApiSuccessResponse<T> = {
-	ok: true;
-	data: T;
-};
+export type ErrorCode =
+	| "NOT_FOUND"
+	| "ALREADY_EXISTS"
+	| "VALIDATION_ERROR"
+	| "UNAUTHORIZED"
+	| "FORBIDDEN"
+	| "CONFLICT"
+	| "INTERNAL_ERROR";
 
 export type ApiErrorResponse = {
-	ok: false;
 	error: string;
-	code: string;
+	details?: unknown;
 };
 
-export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponse<T> = T | ApiErrorResponse;

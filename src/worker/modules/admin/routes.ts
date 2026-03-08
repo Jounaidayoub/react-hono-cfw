@@ -2,11 +2,7 @@ import { paymentStatusSchema } from "../../../lib/schemas";
 import { createHonoApp } from "../../app";
 import { adminMiddleware } from "../../middleware/admin";
 import { authMiddleware } from "../../middleware/auth";
-import {
-	jsonErr,
-	jsonOk,
-	jsonValidationErr,
-} from "../../shared/response";
+import { jsonError, jsonOk } from "../../shared/response";
 import { getAdminUserProfile, updatePaymentStatus } from "./service";
 
 const admin = createHonoApp();
@@ -17,7 +13,11 @@ admin.get("/users/:userId/profile", async c => {
 	const userId = c.req.param("userId");
 	const result = await getAdminUserProfile(userId);
 
-	return result.ok ? jsonOk(c, result.data) : jsonErr(c, result.error);
+	if (result.ok) {
+		return jsonOk(c, result.data);
+	}
+
+	return jsonError(c, result.error.type);
 });
 
 admin.patch("/users/:userId/payment-status", async c => {
@@ -25,12 +25,16 @@ admin.patch("/users/:userId/payment-status", async c => {
 	const body = paymentStatusSchema.safeParse(await c.req.json());
 
 	if (!body.success) {
-		return jsonValidationErr(c, body.error.issues);
+		return jsonError(c, "VALIDATION_ERROR", body.error.issues);
 	}
 
 	const result = await updatePaymentStatus(userId, body.data.paymentStatus);
 
-	return result.ok ? jsonOk(c, result.data) : jsonErr(c, result.error);
+	if (result.ok) {
+		return jsonOk(c, result.data);
+	}
+
+	return jsonError(c, result.error.type);
 });
 
 export default admin;

@@ -1,30 +1,10 @@
-export type ErrorCode =
-	| "NOT_FOUND"
-	| "ALREADY_EXISTS"
-	| "VALIDATION_ERROR"
-	| "UNAUTHORIZED"
-	| "FORBIDDEN"
-	| "CONFLICT"
-	| "INTERNAL_ERROR";
 
-export type AppError = {
-	code: ErrorCode;
-	message: string;
-	details?: unknown;
-};
 
-export type Result<T, E = AppError> =
+export type Result<T, E = never> =
 	| { ok: true; data: T }
 	| { ok: false; error: E };
 
-export function ok<T>(data: T): Result<T, never> {
-	return { ok: true, data };
-}
+export const ok = <T>(data: T): Result<T, never> => ({ ok: true, data });
+export const error = <E>(value: E): Result<never, E> => ({ ok: false, error: value });
+export const err = error;
 
-export function err(
-	code: ErrorCode,
-	message: string,
-	details?: unknown,
-): Result<never, AppError> {
-	return { ok: false, error: { code, message, details } };
-}

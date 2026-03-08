@@ -1,9 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../../lib/db";
 import { events, userActivities } from "../../../lib/schemas";
-import { err, ok, type Result } from "../../../lib/types";
+import { error, ok, type Result } from "../../../lib/types";
 import { getEventById, isEventActive } from "../events/service";
 import { awardActivity, getUserXp } from "./service";
+import type { ProcessCheckinError } from "./errors";
 
 export type CheckinData = {
 	xpAwarded: number;
@@ -23,39 +24,29 @@ export async function processCheckin(
 	userId: string | null,
 	eventId: string,
 	qrCode: string,
-): Promise<Result<CheckinData>> {
+): Promise<Result<CheckinData, ProcessCheckinError>> {
 	if (!userId) {
-		return err("UNAUTHORIZED", "Authentication required", {
-			reason: "NOT_AUTHENTICATED",
-		});
+		return error({ type: "XP_NOT_AUTHENTICATED" });
 	}
 
 	const eventResult = await getEventById(eventId);
 
 	if (!eventResult.ok) {
-		return err("NOT_FOUND", "Event not found", {
-			reason: "EVENT_NOT_FOUND",
-		});
+		return error({ type: "XP_EVENT_NOT_FOUND" });
 	}
 
 	const event = eventResult.data;
 
 	if (!isEventActive(event)) {
-		return err("CONFLICT", "Event is not active", {
-			reason: "EVENT_NOT_ACTIVE",
-		});
+		return error({ type: "XP_EVENT_NOT_ACTIVE" });
 	}
 
 	if (event.currentQrSecret !== qrCode) {
-		return err("VALIDATION_ERROR", "Invalid QR code", {
-			reason: "INVALID_CODE",
-		});
+		return error({ type: "XP_INVALID_CODE" });
 	}
 
 	if (!event.qrExpiresAt || event.qrExpiresAt <= new Date()) {
-		return err("CONFLICT", "QR code expired", {
-			reason: "CODE_EXPIRED",
-		});
+		return error({ type: "XP_CODE_EXPIRED" });
 	}
 
 	const awardResult = await awardActivity(
@@ -66,22 +57,11 @@ export async function processCheckin(
 	);
 
 	if (!awardResult.ok) {
-		const reason =
-			typeof awardResult.error.details === "object" &&
-			awardResult.error.details &&
-			"reason" in awardResult.error.details
-				? String((awardResult.error.details as { reason?: unknown }).reason)
-				: undefined;
-
-		if (reason === "ALREADY_AWARDED") {
-			return err("CONFLICT", "Already checked in", {
-				reason: "ALREADY_CHECKED_IN",
-			});
+		if (awardResult.error.type === "XP_ACTIVITY_ALREADY_AWARDED") {
+			return error({ type: "XP_ACTIVITY_ALREADY_AWARDED" });
 		}
 
-		return err("INTERNAL_ERROR", "Failed to process check-in", {
-			reason: "AWARD_FAILED",
-		});
+		return error({ type: "XP_AWARD_FAILED" });
 	}
 
 	const totalXpResult = await getUserXp(userId);
@@ -99,7 +79,7 @@ export async function processCheckin(
 
 export async function getUserCheckins(
 	userId: string,
-): Promise<Result<UserCheckin[]>> {
+): Promise<Result<UserCheckin[], never>> {
 	const activities = await db
 		.select()
 		.from(userActivities)

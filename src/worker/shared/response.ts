@@ -1,8 +1,21 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import type { AppError, ErrorCode } from "../../lib/types";
+import type { ErrorCode } from "../../lib/types";
+import type { ActivityTypeError } from "../modules/activity-types/errors";
+import type { AdminError } from "../modules/admin/errors";
+import type { EventError } from "../modules/events/errors";
+import type { ProfileError } from "../modules/profile/errors";
+import type { XpError } from "../modules/xp/errors";
 
-const errorCodeToStatus: Record<ErrorCode, ContentfulStatusCode> = {
+export type ApiErrorType =
+	| ErrorCode
+	| ActivityTypeError["type"]
+	| AdminError["type"]
+	| EventError["type"]
+	| ProfileError["type"]
+	| XpError["type"];
+
+const errorTypeToStatus: Record<ApiErrorType, ContentfulStatusCode> = {
 	NOT_FOUND: 404,
 	ALREADY_EXISTS: 409,
 	VALIDATION_ERROR: 400,
@@ -10,30 +23,41 @@ const errorCodeToStatus: Record<ErrorCode, ContentfulStatusCode> = {
 	FORBIDDEN: 403,
 	CONFLICT: 409,
 	INTERNAL_ERROR: 500,
-	
+	PROFILE_NOT_FOUND: 404,
+	PROFILE_CREATE_FAILED: 500,
+	PROFILE_UPDATE_FAILED: 500,
+	ADMIN_PROFILE_NOT_FOUND: 404,
+	ADMIN_PAYMENT_STATUS_UPDATE_FAILED: 500,
+	ACTIVITY_TYPE_NOT_FOUND: 404,
+	ACTIVITY_TYPE_UPDATE_FAILED: 500,
+	EVENT_NOT_FOUND: 404,
+	EVENT_CREATE_FAILED: 500,
+	EVENT_UPDATE_FAILED: 500,
+	XP_ACTIVITY_TYPE_NOT_FOUND: 404,
+	XP_ACTIVITY_TYPE_INACTIVE: 409,
+	XP_ACTIVITY_ALREADY_AWARDED: 409,
+	XP_NOT_AUTHENTICATED: 401,
+	XP_EVENT_NOT_FOUND: 404,
+	XP_EVENT_NOT_ACTIVE: 409,
+	XP_INVALID_CODE: 400,
+	XP_CODE_EXPIRED: 409,
+	XP_AWARD_FAILED: 500,
 };
 
-export function jsonErr(c: Context, error: AppError) {
-	const status = errorCodeToStatus[error.code] ?? 500;
-	return c.json({ ok: false, error: error.message, code: error.code }, status);
-}
-
-export function jsonOk<T>(c: Context, data: T) {
-	return c.json({ ok: true, data }, 200);
-}
-
-export function jsonCreated<T>(c: Context, data: T) {
-	return c.json({ ok: true, data }, 201);
-}
-
-export function jsonValidationErr(c: Context, zodError: unknown) {
+export function jsonError(
+	c: Context,
+	error: ApiErrorType,
+	details?: unknown,
+) {
 	return c.json(
 		{
-			ok: false,
-			error: "Validation failed",
-			code: "VALIDATION_ERROR",
-			details: zodError,
+			error,
+			...(details === undefined ? {} : { details }),
 		},
-		400,
+		errorTypeToStatus[error],
 	);
+}
+
+export function jsonOk<T>(c: Context, data: T, status = 200) {
+	return c.json(data, status as ContentfulStatusCode);
 }

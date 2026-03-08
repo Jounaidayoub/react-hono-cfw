@@ -71,9 +71,9 @@
   "scripts": {
     "build": "tsc -b && vite build",
     "cf-typegen": "wrangler types",
-    "check": "tsc -p  tsconfig.app.json  && vite build && wrangler deploy --dry-run",
+    "check": "pnpm typecheck && vite build && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",

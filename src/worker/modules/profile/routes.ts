@@ -1,12 +1,7 @@
 import { profileFormSchema } from "../../../lib/schemas";
 import { createHonoApp } from "../../app";
 import { authMiddleware } from "../../middleware/auth";
-import {
-	jsonCreated,
-	jsonErr,
-	jsonOk,
-	jsonValidationErr,
-} from "../../shared/response";
+import { jsonError, jsonOk } from "../../shared/response";
 import { getProfileByUserId, upsertProfile } from "./service";
 
 const profile = createHonoApp();
@@ -19,20 +14,28 @@ profile.get("/", async c => {
 	const user = c.get("user");
 	const result = await getProfileByUserId(user.id);
 
-	return result.ok ? jsonOk(c, result.data) : jsonErr(c, result.error);
+	if (result.ok) {
+		return jsonOk(c, result.data);
+	}
+
+	return jsonError(c, result.error.type);
 });
 
 profile.post("/", async c => {
 	const body = profileFormSchema.safeParse(await c.req.json());
 
 	if (!body.success) {
-		return jsonValidationErr(c, body.error.issues);
+		return jsonError(c, "VALIDATION_ERROR", body.error.issues);
 	}
 
 	const user = c.get("user");
 	const result = await upsertProfile(user.id, body.data);
 
-	return result.ok ? jsonCreated(c, result.data) : jsonErr(c, result.error);
+	if (result.ok) {
+		return jsonOk(c, result.data, 201);
+	}
+
+	return jsonError(c, result.error.type);
 });
 
 export default profile;

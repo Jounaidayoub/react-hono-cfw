@@ -2,11 +2,15 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../lib/db";
 import { userProfiles } from "../../../lib/schemas";
 import type { UserProfile } from "../../../lib/schemas";
-import { err, ok, type Result } from "../../../lib/types";
+import { error, ok, type Result } from "../../../lib/types";
+import type {
+	GetAdminUserProfileError,
+	UpdatePaymentStatusError,
+} from "./errors";
 
 export async function getAdminUserProfile(
 	userId: string,
-): Promise<Result<UserProfile>> {
+): Promise<Result<UserProfile, GetAdminUserProfileError>> {
 	const profile = await db
 		.select()
 		.from(userProfiles)
@@ -14,7 +18,7 @@ export async function getAdminUserProfile(
 		.get();
 
 	if (!profile) {
-		return err("NOT_FOUND", "Profile not found");
+		return error({ type: "ADMIN_PROFILE_NOT_FOUND" });
 	}
 
 	return ok(profile);
@@ -23,7 +27,7 @@ export async function getAdminUserProfile(
 export async function updatePaymentStatus(
 	userId: string,
 	paymentStatus: "pending" | "paid",
-): Promise<Result<UserProfile>> {
+): Promise<Result<UserProfile, UpdatePaymentStatusError>> {
 	const existing = await db
 		.select()
 		.from(userProfiles)
@@ -31,10 +35,7 @@ export async function updatePaymentStatus(
 		.get();
 
 	if (!existing) {
-		return err(
-			"NOT_FOUND",
-			"Profile not found. User has not completed onboarding.",
-		);
+		return error({ type: "ADMIN_PROFILE_NOT_FOUND" });
 	}
 
 	const [updated] = await db
@@ -44,7 +45,7 @@ export async function updatePaymentStatus(
 		.returning();
 
 	if (!updated) {
-		return err("INTERNAL_ERROR", "Failed to update payment status");
+		return error({ type: "ADMIN_PAYMENT_STATUS_UPDATE_FAILED" });
 	}
 
 	return ok(updated);

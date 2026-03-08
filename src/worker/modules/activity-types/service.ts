@@ -2,16 +2,20 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../lib/db";
 import { activityTypes } from "../../../lib/schemas";
 import type { ActivityType, ActivityTypeUpdate } from "../../../lib/schemas";
-import { err, ok, type Result } from "../../../lib/types";
+import { error, ok, type Result } from "../../../lib/types";
+import type {
+	GetActivityTypeError,
+	UpdateActivityTypeError,
+} from "./errors";
 
-export async function listActivityTypes(): Promise<Result<ActivityType[]>> {
+export async function listActivityTypes(): Promise<Result<ActivityType[], never>> {
 	const types = await db.select().from(activityTypes).all();
 	return ok(types);
 }
 
 export async function getActivityTypeById(
 	id: string,
-): Promise<Result<ActivityType>> {
+): Promise<Result<ActivityType, GetActivityTypeError>> {
 	const activityType = await db
 		.select()
 		.from(activityTypes)
@@ -19,7 +23,7 @@ export async function getActivityTypeById(
 		.get();
 
 	if (!activityType) {
-		return err("NOT_FOUND", "Activity type not found");
+		return error({ type: "ACTIVITY_TYPE_NOT_FOUND" });
 	}
 
 	return ok(activityType);
@@ -28,7 +32,7 @@ export async function getActivityTypeById(
 export async function updateActivityType(
 	id: string,
 	data: ActivityTypeUpdate,
-): Promise<Result<ActivityType>> {
+): Promise<Result<ActivityType, UpdateActivityTypeError>> {
 	const existing = await db
 		.select()
 		.from(activityTypes)
@@ -36,7 +40,7 @@ export async function updateActivityType(
 		.get();
 
 	if (!existing) {
-		return err("NOT_FOUND", "Activity type not found");
+		return error({ type: "ACTIVITY_TYPE_NOT_FOUND" });
 	}
 
 	const [updated] = await db
@@ -49,7 +53,7 @@ export async function updateActivityType(
 		.returning();
 
 	if (!updated) {
-		return err("INTERNAL_ERROR", "Failed to update activity type");
+		return error({ type: "ACTIVITY_TYPE_UPDATE_FAILED" });
 	}
 
 	return ok(updated);

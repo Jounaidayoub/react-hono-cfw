@@ -38,7 +38,7 @@ describe("profile service", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("NOT_FOUND");
+			expect(result.error.type).toBe("PROFILE_NOT_FOUND");
 		}
 	});
 
