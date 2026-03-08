@@ -1,68 +1,78 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
-import type { User, ListUsersQuery } from "@/types/user";
+import type { UserWithRole } from "better-auth/plugins/admin";
+
+export type AppRole = "user" | "admin";
+
+export type AppUser = Omit<UserWithRole, "role"> & {
+	role?: AppRole;
+};
+
+export type AppUserWithRole = AppUser;
+
+export type ListUsersQuery = {
+	limit?: number;
+	offset?: number;
+	searchValue?: string;
+	searchField?: "name" | "email";
+	searchOperator?: "contains" | "starts_with" | "ends_with";
+	sortBy?: string;
+	sortDirection?: "asc" | "desc";
+	filterField?: string;
+	filterValue?: string | number | boolean;
+	filterOperator?: "eq" | "ne" | "lt" | "lte" | "gt" | "gte";
+};
+
+
 
 export function useUsers(query: ListUsersQuery = {}) {
-    const [users, setUsers] = useState<User[]>([]);
-    const [total, setTotal] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-    const [refetchTrigger, setRefetchTrigger] = useState(0);
+	const usersQuery = useQuery({
+		queryKey: ["users", query],
+		queryFn: async (): Promise<{ users: AppUser[]; total: number }> => {
+			const response = await authClient.admin.listUsers({
+				query: {
+					limit: query.limit ?? 10,
+					offset: query.offset ?? 0,
+					searchField: query.searchField,
+					searchValue: query.searchValue,
+					searchOperator: query.searchOperator,
+					sortBy: query.sortBy,
+					sortDirection: query.sortDirection,
+					filterField: query.filterField,
+					filterValue: query.filterValue,
+					filterOperator: query.filterOperator,
+				},
+			});
 
-    const refetch = useCallback(() => {
-        setRefetchTrigger(prev => prev + 1);
-    }, []);
+			if (response.error) {
+				throw new Error(response.error.message || "Failed to fetch users");
+			}
 
-    useEffect(() => {
-        async function fetchUsers() {
-            setIsLoading(true);
-            setError(null);
+			const users: AppUser[] = (response.data?.users ?? []).map(user => {
+				const { role, ...rest } = user;
+				const normalizedRole: AppRole | undefined =
+					role === "admin" ? "admin" : role === "user" ? "user" : undefined;
 
-            try {
-                const response = await authClient.admin.listUsers({
-                    query: {
-                        limit: query.limit || 10,
-                        offset: query.offset || 0,
-                        searchField: query.searchField,
-                        searchValue: query.searchValue,
-                        searchOperator: query.searchOperator,
-                        sortBy: query.sortBy,
-                        sortDirection: query.sortDirection,
-                        filterField: query.filterField,
-                        filterValue: query.filterValue,
-                        filterOperator: query.filterOperator,
-                    }
-                });
+				return {
+					...rest,
+					role: normalizedRole,
+				};
+			});
 
-                if (response.error) {
-                    throw new Error(response.error.message || "Failed to fetch users");
-                }
-                
-                const data = response.data;
-                
-                if (data) {
-                    setUsers(data.users as User[]);
-                    setTotal(data.total);
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err : new Error("Unknown error"));
-            } finally {
-                setIsLoading(false);
-            }
-        }
+			return {
+				users,
+				total: response.data?.total ?? 0,
+			};
+		},
+	});
 
-        fetchUsers();
-    }, [
-        query.limit,
-        query.offset,
-        query.searchValue,
-        query.searchField,
-        query.sortBy,
-        query.sortDirection,
-        query.filterField,
-        query.filterValue,
-        refetchTrigger,
-    ]);
-
-    return { users, total, isLoading, error, refetch };
+	return {
+		users: usersQuery.data?.users ?? [],
+		total: usersQuery.data?.total ?? 0,
+		isLoading: usersQuery.isLoading,
+		error: usersQuery.error ?? null,
+		refetch: () => {
+			void usersQuery.refetch();
+		},
+	};
 }

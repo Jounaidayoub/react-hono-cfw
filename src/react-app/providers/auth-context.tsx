@@ -9,32 +9,19 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import {
+  isGetProfileApiError,
+  profileApi,
+} from "@/api/profile";
 import { authClient } from "@/lib/auth-client";
-
-export type Profile = {
-  id: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  birthDate: string;
-  gender: "Male" | "Female";
-  status: "FSTM" | "External";
-  school: string | null;
-  major: string | null;
-  year: string | null;
-  feesAmount: string;
-  paymentStatus: "pending" | "paid";
-  createdAt: number;
-  updatedAt: number;
-};
+import type { UserProfile } from "@/lib/schemas/index";
 
 type AuthStatus = "loading" | "ready" | "error";
 
 interface AuthContextValue {
   status: AuthStatus;
   session: ReturnType<typeof authClient.useSession>["data"];
-  profile: Profile | null;
+  profile: UserProfile | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   needsProfile: boolean;
@@ -54,7 +41,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const sessionState = authClient.useSession();
   const session = sessionState.data;
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [needsProfile, setNeedsProfile] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<Error | null>(null);
@@ -80,28 +67,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setProfileError(null);
 
     try {
-      const response = await fetch("/api/profile", {
-        signal: controller.signal,
-      });
-
-      if (response.status === 404) {
-        setProfile(null);
-        setNeedsProfile(true);
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || "Failed to load profile";
-        throw new Error(errorMessage);
-      }
-
-      const data: Profile = await response.json();
+      const data = await profileApi.get();
       setProfile(data);
       setNeedsProfile(false);
     } catch (error) {
       if ((error as DOMException).name === "AbortError") {
         return;
+      }
+
+      if (isGetProfileApiError(error)) {
+        switch (error.type) {
+          case "PROFILE_NOT_FOUND":
+            setProfile(null);
+            setNeedsProfile(true);
+            return;
+          default: {
+            const exhaustiveError: never = error.type;
+            return exhaustiveError;
+          }
+        }
       }
 
       const errorObj = error as Error;

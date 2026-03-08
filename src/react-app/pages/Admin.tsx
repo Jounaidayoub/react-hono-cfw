@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/providers/auth-context";
 import { Navigate } from "react-router";
-import { useUsers } from "@/hooks/use-users";
+import { useUsers, type AppRole, type AppUserWithRole } from "@/hooks/use-users";
 import { getUserColumns } from "@/components/admin/user-table-columns";
 import { UserDetailsDrawer } from "@/components/admin/user-details-drawer";
 import {
@@ -46,13 +47,23 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
-import type { User } from "@/types/user";
 
 export default function Admin() {
   const { isAdmin, status: authStatus } = useAuth();
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
+
+  const getMetaClassName = (meta: unknown): string | undefined => {
+    if (
+      meta &&
+      typeof meta === "object" &&
+      "className" in meta &&
+      typeof (meta as { className?: unknown }).className === "string"
+    ) {
+      return (meta as { className: string }).className;
+    }
+
+    return undefined;
+  };
+
   // State for filtering and searching
   const [searchInput, setSearchInput] = useState("");
   const [searchValue, setSearchValue] = useState("");
@@ -60,7 +71,7 @@ export default function Admin() {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   // Drawer state
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AppUserWithRole | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Debounce search
@@ -91,32 +102,42 @@ export default function Admin() {
       sorting.length > 0 ? (sorting[0].desc ? "desc" : "asc") : undefined,
   });
 
-  const handleUserClick = (user: User) => {
+  const handleUserClick = (user: AppUserWithRole) => {
     setSelectedUser(user);
     setDrawerOpen(true);
   };
 
-  const handleRoleUpdate = async (
-    userId: string,
-    newRole: "user" | "admin",
-  ) => {
-    try {
-      const response = await authClient.admin.setRole({
-        userId,
-        role: newRole,
-      });
+  const roleMutation = useMutation({
+    mutationFn: async ({
+      userId,
+      role,
+    }: {
+      userId: string;
+      role: AppRole;
+    }) => {
 
+      
+
+      const response = await authClient.admin.setRole({ userId, role });
       if (response.error) {
-        toast.error(response.error.message || "Failed to update role");
-        return;
+        throw new Error(response.error.message || "Failed to update role");
       }
-
+      return response;
+    },
+    onSuccess: () => {
       toast.success("Role updated successfully");
       refetch();
-    } catch (err) {
-      toast.error("An unexpected error occurred");
-      console.error(err);
-    }
+    },
+    onError: error => {
+      toast.error(error.message || "An unexpected error occurred");
+    },
+  });
+
+  const handleRoleUpdate = async (
+    userId: string,
+    newRole: AppRole,
+  ) => {
+    await roleMutation.mutateAsync({ userId, role: newRole });
   };
 
   const columns = useMemo(() => getUserColumns(handleUserClick), []);
@@ -142,6 +163,10 @@ export default function Admin() {
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   if (authStatus === "loading") {
     return (
@@ -207,9 +232,7 @@ export default function Admin() {
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
-                        className={
-                          (header.column.columnDef.meta as any)?.className
-                        }
+                        className={getMetaClassName(header.column.columnDef.meta)}
                       >
                         {header.isPlaceholder
                           ? null
@@ -229,7 +252,7 @@ export default function Admin() {
                       {table.getAllColumns().map((column, j) => (
                         <TableCell
                           key={j}
-                          className={(column.columnDef.meta as any)?.className}
+                          className={getMetaClassName(column.columnDef.meta)}
                         >
                           <Skeleton className="h-6 w-full" />
                         </TableCell>
@@ -246,9 +269,7 @@ export default function Admin() {
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          className={
-                            (cell.column.columnDef.meta as any)?.className
-                          }
+                          className={getMetaClassName(cell.column.columnDef.meta)}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -334,6 +355,10 @@ export default function Admin() {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         onRoleUpdate={handleRoleUpdate}
+        onUserDeleted={() => {
+          refetch();
+          setSelectedUser(null);
+        }}
       />
     </div>
   );

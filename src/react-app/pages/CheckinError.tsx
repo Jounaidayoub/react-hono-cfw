@@ -4,25 +4,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
+  XP_INVALID_CODE: {
+    title: "Invalid QR Code",
+    message:
+      "The QR code you scanned is no longer valid. Please ask the organizer to show you the current code.",
+  },
   INVALID_CODE: {
     title: "Invalid QR Code",
     message: "The QR code you scanned is no longer valid. Please ask the organizer to show you the current code.",
+  },
+  XP_CODE_EXPIRED: {
+    title: "QR Code Expired",
+    message:
+      "The QR code rotated before you could check in. Please scan the new code.",
   },
   CODE_EXPIRED: {
     title: "QR Code Expired",
     message: "The QR code rotated before you could check in. Please scan the new code.",
   },
+  XP_EVENT_NOT_FOUND: {
+    title: "Event Not Found",
+    message: "This event doesn't exist or has been deleted.",
+  },
   EVENT_NOT_FOUND: {
     title: "Event Not Found",
     message: "This event doesn't exist or has been deleted.",
+  },
+  XP_EVENT_NOT_ACTIVE: {
+    title: "Event Not Active",
+    message: "This event hasn't started yet or has already ended.",
   },
   EVENT_NOT_ACTIVE: {
     title: "Event Not Active",
     message: "This event hasn't started yet or has already ended.",
   },
+  XP_ACTIVITY_ALREADY_AWARDED: {
+    title: "Already Checked In",
+    message:
+      "You've already checked in to this event. You can only check in once per event.",
+  },
   ALREADY_CHECKED_IN: {
     title: "Already Checked In",
     message: "You've already checked in to this event. You can only check in once per event.",
+  },
+  XP_NOT_AUTHENTICATED: {
+    title: "Login Required",
+    message: "Please log in to check in to this event.",
   },
   NOT_AUTHENTICATED: {
     title: "Login Required",
@@ -41,7 +68,9 @@ export default function CheckinError() {
     message: "Something went wrong while trying to check you in. Please try again.",
   };
 
-  const showLoginButton = errorCode === "NOT_AUTHENTICATED";
+  const showLoginButton =
+		errorCode === "NOT_AUTHENTICATED" ||
+		errorCode === "XP_NOT_AUTHENTICATED";
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">

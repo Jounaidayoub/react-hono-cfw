@@ -8,7 +8,11 @@ about.md
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
 *.orig
+.agents
+.opencode
 
+
+k
 # Created by git when using merge tools for conflicts
 *.BACKUP.*
 *.BASE.*

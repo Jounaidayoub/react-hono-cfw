@@ -26,5 +26,4 @@ export const userXpCacheInsertSchema = createInsertSchema(userXpCache, {
   totalXp: z.number().int().min(0).default(0),
 });
 
-export type UserXpCacheSelect = z.infer<typeof userXpCacheSelectSchema>;
 export type UserXpCacheInsertZod = z.infer<typeof userXpCacheInsertSchema>;

@@ -53,7 +53,6 @@ export const userActivityInsertSchema = createInsertSchema(userActivities, {
   xpAwarded: z.number().int().min(0),
 });
 
-export type UserActivitySelect = z.infer<typeof userActivitySelectSchema>;
 export type UserActivityInsertZod = z.infer<typeof userActivityInsertSchema>;
 
 // Checkin schema (enriched user activity for event check-ins)

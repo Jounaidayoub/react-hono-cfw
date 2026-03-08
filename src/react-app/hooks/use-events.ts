@@ -1,276 +1,174 @@
-import { useState, useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import {
-  type Event,
-  type EventFormData,
-  type QRData,
-  type Attendee,
-  qrDataSchema,
-} from "@/lib/schemas/events";
-import { safeParse } from "zod";
-
-// Parse event dates from API response
-function parseEvent(event: Record<string, unknown>): Event {
-  return {
-    ...event,
-    startsAt: new Date(event.startsAt as string),
-    endsAt: new Date(event.endsAt as string),
-    createdAt: new Date(event.createdAt as string),
-    updatedAt: new Date(event.updatedAt as string),
-    currentQrSecret: (event.currentQrSecret as string | null) ?? null,
-    qrExpiresAt: event.qrExpiresAt
-      ? new Date(event.qrExpiresAt as string)
-      : null,
-  } as Event;
+	useMutation,
+	useQuery,
+	useQueryClient,
+	type UseQueryResult,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
+import { eventsApi } from "@/api/events";
+import type {
+	Attendee,
+	Event,
+	EventFormData,
+	QRData,
+} from "@/lib/schemas/index";
+// use zod to replace all this bs and  use safeParse
+function parseEvent(event: Event): Event {
+	return {
+		...event,
+		startsAt: new Date(event.startsAt),
+		endsAt: new Date(event.endsAt),
+		createdAt: new Date(event.createdAt),
+		updatedAt: new Date(event.updatedAt),
+		qrExpiresAt: event.qrExpiresAt ? new Date(event.qrExpiresAt) : null,
+	};
 }
 
-// Fetch all events
+function parseAttendee(attendee: Attendee): Attendee {
+	return {
+		...attendee,
+		checkedInAt: new Date(attendee.checkedInAt),
+	};
+}
+
+function parseQrData(qrData: QRData): QRData {
+	return {
+		...qrData,
+		expiresAt: new Date(qrData.expiresAt),
+	};
+}
+
 export function useEvents() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
+	const query = useQuery({
+		queryKey: ["events"],
+		queryFn: async () => (await eventsApi.list()).map(parseEvent),
+	});
 
-  const refetch = useCallback(() => {
-    setRefetchTrigger((prev) => prev + 1);
-  }, []);
-
-  useEffect(() => {
-    async function fetchEvents() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch("/api/events");
-        if (!response.ok) {
-          throw new Error("Failed to fetch events");
-        }
-        const data = await response.json();
-        setEvents((data.events || []).map(parseEvent));
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Unknown error"));
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchEvents();
-  }, [refetchTrigger]);
-
-  return { events, isLoading, error, refetch };
+	return {
+		events: query.data ?? [],
+		isLoading: query.isLoading,
+		error: query.error as Error | null,
+		
+	};
 }
 
-// Create event mutation
 export function useCreateEvent() {
-  const [isLoading, setIsLoading] = useState(false);
+	const queryClient = useQueryClient();
+	const mutation = useMutation({
+		mutationFn: eventsApi.create,
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["events"] });
+			toast.success("Event created successfully");
+		},
+		onError: error => {
+			toast.error(error.message);
+		},
+	});
 
-  const createEvent = useCallback(
-    async (data: EventFormData): Promise<Event | null> => {
-      setIsLoading(true);
-      try {
-        const response = await fetch("/api/events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...data,
-            startsAt: new Date(data.startsAt).toISOString(),
-            endsAt: new Date(data.endsAt).toISOString(),
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to create event");
-        }
-
-        const result = await response.json();
-        toast.success("Event created successfully");
-        return parseEvent(result);
-      } catch (err) {
-        console.error(err);
-        const message =
-          err instanceof Error ? err.message : "Failed to create event";
-        toast.error(message);
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
-  );
-
-  return { createEvent, isLoading };
+	return {
+		createEvent: async (data: EventFormData): Promise<Event | null> => {
+			try {
+				const event = await mutation.mutateAsync(data);
+				return parseEvent(event);
+			} catch {
+				return null;
+			}
+		},
+		isLoading: mutation.isPending,
+	};
 }
 
-// Update event mutation
 export function useUpdateEvent() {
-  const [isLoading, setIsLoading] = useState(false);
+	const queryClient = useQueryClient();
+	const mutation = useMutation({
+		mutationFn: ({ id, data }: { id: string; data: Partial<EventFormData> }) =>
+			eventsApi.update(id, data),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["events"] });
+			toast.success("Event updated successfully");
+		},
+		onError: error => {
+			toast.error(error.message);
+		},
+	});
 
-  const updateEvent = useCallback(
-    async (id: string, data: Partial<EventFormData>): Promise<Event | null> => {
-      setIsLoading(true);
-      try {
-        const payload: Record<string, unknown> = { ...data };
-        if (data.startsAt) {
-          payload.startsAt = new Date(data.startsAt).toISOString();
-        }
-        if (data.endsAt) {
-          payload.endsAt = new Date(data.endsAt).toISOString();
-        }
-
-        const response = await fetch(`/api/events/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to update event");
-        }
-
-        const result = await response.json();
-        toast.success("Event updated successfully");
-        return parseEvent(result);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to update event";
-        toast.error(message);
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
-  );
-
-  return { updateEvent, isLoading };
+	return {
+		updateEvent: async (
+			id: string,
+			data: Partial<EventFormData>,
+		): Promise<Event | null> => {
+			try {
+				const event = await mutation.mutateAsync({ id, data });
+				return parseEvent(event);
+			} catch {
+				return null;
+			}
+		},
+		isLoading: mutation.isPending,
+	};
 }
 
-// Delete event mutation
 export function useDeleteEvent() {
-  const [isLoading, setIsLoading] = useState(false);
+	const queryClient = useQueryClient();
+	const mutation = useMutation({
+		mutationFn: eventsApi.delete,
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["events"] });
+			toast.success("Event deleted successfully");
+		},
+		onError: error => {
+			toast.error(error.message);
+		},
+	});
 
-  const deleteEvent = useCallback(async (id: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/events/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete event");
-      }
-
-      toast.success("Event deleted successfully");
-      return true;
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to delete event";
-      toast.error(message);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return { deleteEvent, isLoading };
+	return {
+		deleteEvent: async (id: string): Promise<boolean> => {
+			try {
+				await mutation.mutateAsync(id);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		isLoading: mutation.isPending,
+	};
 }
 
-// Fetch QR code with auto-refresh
 export function useEventQR(eventId: string | null) {
-  const [qrData, setQrData] = useState<QRData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+	const query: UseQueryResult<QRData, Error> = useQuery({
+		queryKey: ["events", eventId, "qr"],
+		queryFn: async () => parseQrData(await eventsApi.getQrCode(eventId as string)),
+		enabled: Boolean(eventId),
+		refetchInterval: queryState => {
+			const data = queryState.state.data;
+			if (!data) {
+				return false;
+			}
 
-  const fetchQR = useCallback(async () => {
-    if (!eventId) return;
+			const ttlMs = data.ttlSeconds * 1000;
+			return Math.max(ttlMs - 3000, 1000);
+		},
+	});
 
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/events/${eventId}/qr`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch QR code");
-      }
-      const data = await response.json();
-      const parsed = safeParse(qrDataSchema, data.qrData);
-      if (!parsed.success) {
-        throw new Error("Invalid QR data format");
-      }
-      // debugger;
-      setQrData(
-        parsed.data,);
-      // debugger;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Unknown error"));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [eventId]);
-
-  // Fetch immediately when eventId changes
-  useEffect(() => {
-    if (eventId) {
-      fetchQR();
-    } else {
-      setQrData(null);
-    }
-  }, [eventId, fetchQR]);
-
-  // Auto-refresh 3 seconds before expiry
-  useEffect(() => {
-    if (!qrData || !eventId) return;
-
-    const refreshTime = qrData.ttlSeconds * 1000 - 3000;
-    if (refreshTime <= 0) {
-      fetchQR();
-      return;
-    }
-
-    const timer = setTimeout(fetchQR, refreshTime);
-    return () => clearTimeout(timer);
-  }, [qrData, eventId, fetchQR]);
-
-  return { qrData, isLoading, error, refetch: fetchQR };
+	return {
+		qrData: query.data ?? null,
+		isLoading: query.isLoading,
+		error: query.error ?? null,
+	
+	};
 }
 
-// Fetch event attendees
 export function useEventAttendees(eventId: string | null) {
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+	const query = useQuery({
+		queryKey: ["events", eventId, "attendees"],
+		queryFn: async () =>
+			(await eventsApi.getAttendees(eventId as string)).map(parseAttendee),
+		enabled: Boolean(eventId),
+	});
 
-  useEffect(() => {
-    if (!eventId) {
-      setAttendees([]);
-      return;
-    }
-
-    async function fetchAttendees() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/events/${eventId}/attendees`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch attendees");
-        }
-        const data = await response.json();
-        setAttendees(
-          (data.attendees || []).map((a: Record<string, unknown>) => ({
-            ...a,
-            checkedInAt: new Date(a.checkedInAt as string),
-          })),
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Unknown error"));
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchAttendees();
-  }, [eventId]);
-
-  return { attendees, isLoading, error };
+	return {
+		attendees: query.data ?? [],
+		isLoading: query.isLoading,
+		error: query.error ?? null,
+	};
 }

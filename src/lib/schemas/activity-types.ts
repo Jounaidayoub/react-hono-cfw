@@ -50,7 +50,6 @@ export const activityTypeUpdateSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export type ActivityTypeSelect = z.infer<typeof activityTypeSelectSchema>;
 export type ActivityTypeInsertZod = z.infer<typeof activityTypeInsertSchema>;
 export type ActivityTypeUpdate = z.infer<typeof activityTypeUpdateSchema>;
 

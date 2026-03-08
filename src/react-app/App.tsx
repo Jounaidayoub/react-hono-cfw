@@ -9,6 +9,7 @@ import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { QueryProvider } from "@/providers/query-provider";
 import Settings from "@/pages/Settings";
 import Calendar from "@/pages/Calendar";
 import Admin from "@/pages/Admin";
@@ -19,9 +20,10 @@ import CheckinError from "@/pages/CheckinError";
 function App() {
   return (
     <ThemeProvider storageKey="xplore-ui-theme" defaultTheme="dark">
-      <AuthProvider>
-        <Toaster richColors position="top-center" />
-        <Routes>
+      <QueryProvider>
+        <AuthProvider>
+          <Toaster richColors position="top-center" />
+          <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           {/* Public/Auth Routes */}
@@ -69,8 +71,9 @@ function App() {
           {/* Check-in result pages (no auth required - they show result after redirect) */}
           <Route path="/checkin/success" element={<CheckinSuccess />} />
           <Route path="/checkin/error" element={<CheckinError />} />
-        </Routes>
-      </AuthProvider>
+          </Routes>
+        </AuthProvider>
+      </QueryProvider>
     </ThemeProvider>
   );
 }
