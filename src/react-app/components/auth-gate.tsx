@@ -1,94 +1,100 @@
-import { useEffect, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { useAuth } from "@/providers/auth-context";
+import { type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router";
+import { useSession } from "@/providers/session-provider";
+import { useProfile } from "@/providers/profile-provider";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AuthGateProps {
-  requireProfile?: boolean;
-  children: ReactNode;
+	requireProfile?: boolean;
+	children: ReactNode;
 }
 
-const FULL_SCREEN_WRAPPER = "flex min-h-screen items-center justify-center bg-muted";
+function getRedirectTarget(opts: {
+	isAuthenticated: boolean;
+	needsOnboarding: boolean;
+	requireProfile: boolean;
+	isAuthRoute: boolean;
+	isOnboardingRoute: boolean;
+	returnTo: string;
+}): string | null {
+	const {
+		isAuthenticated,
+		needsOnboarding,
+		requireProfile,
+		isAuthRoute,
+		isOnboardingRoute,
+		returnTo,
+	} = opts;
 
-export function AuthGate({ requireProfile = true, children }: AuthGateProps) {
-  const { status, isAuthenticated, needsProfile } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+	if (!isAuthenticated && !isAuthRoute) {
+		return `/login?returnTo=${encodeURIComponent(returnTo)}`;
+	}
 
-  const pathname = location.pathname;
-  const isAuthRoute = pathname === "/login" || pathname === "/signup";
-  const isOnboardingRoute = pathname === "/onboarding";
+	if (isAuthenticated && needsOnboarding && !isOnboardingRoute) {
+		return "/onboarding";
+	}
 
-  useEffect(() => {
-    if (status === "loading") {
-      return;
-    }
+	if (isAuthenticated && !needsOnboarding && isOnboardingRoute) {
+		return "/dashboard";
+	}
 
-    // Handle error state: when profile fetch fails, treat as needsProfile=true
-    // to ensure users complete onboarding when we can't verify their profile
-    const effectiveNeedsProfile = status === "error" ? true : needsProfile;
+	if (isAuthenticated && !needsOnboarding && !requireProfile && isAuthRoute) {
+		return "/dashboard";
+	}
 
-    if (!isAuthenticated && !isAuthRoute) {
-      navigate("/login", { replace: true });
-      return;
-    }
+	return null;
+}
 
-    if (isAuthenticated && effectiveNeedsProfile && !isOnboardingRoute) {
-      navigate("/onboarding", { replace: true });
-      return;
-    }
+export function AuthGate({
+	requireProfile = true,
+	children,
+}: AuthGateProps) {
+	const { isPending, isAuthenticated } = useSession();
+	const { needsOnboarding, profileLoading, profileError, refreshProfile } =
+		useProfile();
+	const location = useLocation();
 
-    if (isAuthenticated && !effectiveNeedsProfile) {
-      if (isOnboardingRoute) {
-        navigate("/profile", { replace: true });
-        return;
-      }
+	const pathname = location.pathname;
+	const isAuthRoute = pathname === "/login" || pathname === "/signup";
+	const isOnboardingRoute = pathname === "/onboarding";
 
-      if (!requireProfile && isAuthRoute) {
-        navigate("/profile", { replace: true });
-      }
-    }
-  }, [
-    isAuthenticated,
-    isAuthRoute,
-    isOnboardingRoute,
-    navigate,
-    needsProfile,
-    requireProfile,
-    status,
-  ]);
+	// Still loading session or profile
+	if (isPending || profileLoading) {
+		return (
+			<div className="flex min-h-screen items-center justify-center bg-muted">
+				<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+			</div>
+		);
+	}
 
-  if (status === "loading") {
-    return (
-      <div className={FULL_SCREEN_WRAPPER}>
-        <p>Loading...</p>
-      </div>
-    );
-  }
+	// Profile fetch failed (network error, not 404) — show retry
+	if (isAuthenticated && profileError && !isAuthRoute) {
+		return (
+			<div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted">
+				<p className="text-sm text-muted-foreground">
+					Failed to load your profile.
+				</p>
+				<Button variant="outline" onClick={() => refreshProfile()}>
+					Try Again
+				</Button>
+			</div>
+		);
+	}
 
-  // Handle error state: when profile fetch fails, treat as needsProfile=true
-  const effectiveNeedsProfile = status === "error" ? true : needsProfile;
+	// Compute redirect if needed
+	const redirectTo = getRedirectTarget({
+		isAuthenticated,
+		needsOnboarding,
+		requireProfile,
+		isAuthRoute,
+		isOnboardingRoute,
+		returnTo: pathname + location.search,
+	});
 
-  if (!isAuthenticated) {
-    if (isAuthRoute) {
-      return <>{children}</>;
-    }
+	if (redirectTo) {
+		return <Navigate to={redirectTo} replace />;
+	}
 
-    return null;
-  }
-
-  if (effectiveNeedsProfile && !isOnboardingRoute) {
-    return null;
-  }
-
-  if (!effectiveNeedsProfile) {
-    if (isOnboardingRoute) {
-      return null;
-    }
-
-    if (!requireProfile && isAuthRoute) {
-      return null;
-    }
-  }
-
-  return <>{children}</>;
+	return <>{children}</>;
 }
