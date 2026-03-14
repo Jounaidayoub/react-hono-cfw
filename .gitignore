@@ -10,8 +10,8 @@ about.md
 *.orig
 .agents
 .opencode
-
-
+skills-lock.json
+.agent
 k
 # Created by git when using merge tools for conflicts
 *.BACKUP.*
