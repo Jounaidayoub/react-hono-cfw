@@ -1,4 +1,4 @@
-import { auth } from "../../../lib/auth";
+import { z } from "zod";
 import { eventFormSchema } from "../../../lib/schemas";
 import { createHonoApp } from "../../app";
 import { adminMiddleware } from "../../middleware/admin";
@@ -102,39 +102,25 @@ events.get("/:id/attendees", authMiddleware, adminMiddleware, async c => {
 	return jsonOk(c, result.data);
 });
 
-events.get("/:eventId/checkin", async c => {
-	const eventId = c.req.param("eventId");
-	const code = c.req.query("code");
+events.post("/:eventId/checkin", authMiddleware, async c => {
+	const body = z.object({ code: z.string() }).safeParse(await c.req.json());
 
-	if (!code) {
-		// use jsonerror? 
-		return c.redirect("/checkin/error?error=XP_INVALID_CODE");
+	if (!body.success) {
+		return jsonError(c, "VALIDATION_ERROR", body.error.issues);
 	}
 
-	const session = await auth.api.getSession({ headers: c.req.raw.headers });
-	const userId = session?.user?.id ?? null;
-	// this wil be obselette once we move the qrcode code too hit a screen isntead of hitting tis endpoint directly, 
-	// using our middlware as ustaul and leting the cilent handle the redirection to login if needed.
-	if (!userId) {
-		const loginUrl = new URL("/login", c.req.url);
-		loginUrl.searchParams.set("returnTo", c.req.url);
-		return c.redirect(loginUrl.toString());
-	}
-
-	const result = await processCheckin(userId, eventId, code);
+	const user = c.get("user");
+	const result = await processCheckin(
+		user.id,
+		c.req.param("eventId"),
+		body.data.code,
+	);
 
 	if (!result.ok) {
-		
-		const errorUrl = new URL("/checkin/error", c.req.url);
-		errorUrl.searchParams.set("error", result.error.type);
-		return c.redirect(errorUrl.toString());
+		return jsonError(c, result.error.type);
 	}
 
-	const successUrl = new URL("/checkin/success", c.req.url);
-	successUrl.searchParams.set("xp", result.data.xpAwarded.toString());
-	successUrl.searchParams.set("event", result.data.eventName);
-	successUrl.searchParams.set("total", result.data.totalXp.toString());
-	return c.redirect(successUrl.toString());
+	return jsonOk(c, result.data);
 });
 
 export default events;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { LoginForm } from "@/components/login-form";
 import { useAuth } from "@/providers/auth-context";
@@ -7,16 +7,22 @@ import { useAuth } from "@/providers/auth-context";
 export default function Login() {
   const { status, isAuthenticated, signInEmail, signInGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const returnTo = searchParams.get("returnTo") || "/dashboard";
 
   const signIn = async () => {
     setIsLoading(true);
     await signInEmail(
       { email, password },
       {
-        onSuccess: () => setIsLoading(false),
+        onSuccess: () => {
+          setIsLoading(false);
+          navigate(returnTo, { replace: true });
+        },
         onError: ({ error }) => {
           setIsLoading(false);
           toast.error(error.message);
@@ -26,13 +32,9 @@ export default function Login() {
   };
 
   const signInWithGoogle = async () => {
-    //TODO: handle errors and there is problem where
-    // of the browser history stack : after signitn in successfully the user will land on the 
-    // the callback url spicified but if he clikcs back he will land the on the oauht prider page 
-    // whihc not only bad ux , but also shows sometimes a btter-auth error
     await signInGoogle({
       provider: "google",
-      callbackURL: `/dashboard`,
+      callbackURL: returnTo,
     });
   };
 
@@ -57,3 +59,4 @@ export default function Login() {
     </div>
   );
 }
+
