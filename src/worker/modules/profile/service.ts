@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "../../../lib/db";
-import { userProfiles } from "../../../lib/schemas";
+import { user, userProfiles } from "../../../lib/schemas";
 import type { ProfileFormData, UserProfile } from "../../../lib/schemas";
 import { error, ok, type Result } from "../../../lib/types";
 import type { GetProfileError, UpsertProfileError } from "./errors";
@@ -59,6 +59,11 @@ export async function upsertProfile(
 			return error({ type: "PROFILE_UPDATE_FAILED" });
 		}
 
+		await db
+			.update(user)
+			.set({ needsOnboarding: false })
+			.where(eq(user.id, userId));
+
 		return ok({ profile: updated, feesAmount });
 	}
 
@@ -80,12 +85,18 @@ export async function upsertProfile(
 			paymentStatus: "pending",
 			createdAt: now,
 			updatedAt: now,
+
 		})
 		.returning();
 
 	if (!inserted) {
 		return error({ type: "PROFILE_CREATE_FAILED" });
 	}
+
+	await db
+		.update(user)
+		.set({ needsOnboarding: false })
+		.where(eq(user.id, userId));
 
 	return ok({ profile: inserted, feesAmount });
 }

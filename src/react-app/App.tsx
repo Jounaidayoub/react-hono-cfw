@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
+import { ProfileProvider } from "@/providers/profile-provider";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Profile from "@/pages/Profile";
@@ -24,7 +25,7 @@ function App() {
         <Route
           path="/login"
           element={
-            <AuthGate requireProfile={false}>
+            <AuthGate>
               <Login />
             </AuthGate>
           }
@@ -32,7 +33,7 @@ function App() {
         <Route
           path="/signup"
           element={
-            <AuthGate requireProfile={false}>
+            <AuthGate>
               <Signup />
             </AuthGate>
           }
@@ -40,7 +41,7 @@ function App() {
         <Route
           path="/onboarding"
           element={
-            <AuthGate requireProfile={false}>
+            <AuthGate>
               <Onboarding />
             </AuthGate>
           }
@@ -50,7 +51,9 @@ function App() {
         <Route
           element={
             <AuthGate>
-              <DashboardLayout />
+              <ProfileProvider>
+                <DashboardLayout />
+              </ProfileProvider>
             </AuthGate>
           }
         >

@@ -16,6 +16,7 @@ interface SessionContextValue {
 	signInGoogle: typeof authClient.signIn.social;
 	signUpEmail: typeof authClient.signUp.email;
 	signOut: typeof authClient.signOut;
+	refreshSession: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue | undefined>(
@@ -29,7 +30,6 @@ interface SessionProviderProps {
 export function SessionProvider({ children }: SessionProviderProps) {
 	const sessionState = authClient.useSession();
 	const session = sessionState.data;
-
 	const value = useMemo<SessionContextValue>(
 		() => ({
 			session,
@@ -39,8 +39,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
 			signInGoogle: authClient.signIn.social,
 			signUpEmail: authClient.signUp.email,
 			signOut: authClient.signOut,
+			refreshSession: sessionState.refetch,
 		}),
-		[session, sessionState.isPending],
+		[session, sessionState.isPending, sessionState.refetch],
 	);
 
 	return (
