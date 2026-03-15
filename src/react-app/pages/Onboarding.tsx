@@ -103,7 +103,7 @@ function getUpsertProfileErrorMessage(error: UpsertProfileApiError): string {
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { refreshProfile } = useAuth();
+  const { refreshSession } = useAuth();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -125,7 +125,7 @@ export default function Onboarding() {
   const onSubmit = async (data: FormData) => {
     try {
       await profileApi.upsert(data);
-      await refreshProfile();
+      await refreshSession();
       navigate("/profile", { replace: true });
     } catch (error) {
       console.error(error);

@@ -29,6 +29,9 @@ function mockSelectGet(value: unknown) {
 describe("profile service", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		const where = vi.fn().mockResolvedValue(undefined);
+		const set = vi.fn(() => ({ where }));
+		dbMock.update.mockReturnValue({ set });
 	});
 
 	it("returns NOT_FOUND when profile does not exist", async () => {

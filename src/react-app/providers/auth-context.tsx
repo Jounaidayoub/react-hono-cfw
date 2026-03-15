@@ -1,7 +1,6 @@
 import { useSession } from "./session-provider";
-import { useProfile } from "./profile-provider";
 
-type AuthStatus = "loading" | "ready" | "error";
+type AuthStatus = "loading" | "ready";
 
 export function useAuth() {
 	const {
@@ -12,32 +11,20 @@ export function useAuth() {
 		signInGoogle,
 		signUpEmail,
 		signOut,
+		refreshSession,
 	} = useSession();
 
-	const {
-		profile,
-		needsOnboarding,
-		isAdmin,
-		profileLoading,
-		profileError,
-		refreshProfile,
-	} = useProfile();
-
-	const status: AuthStatus =
-		isPending || profileLoading
-			? "loading"
-			: profileError
-				? "error"
-				: "ready";
+	const status: AuthStatus = isPending ? "loading" : "ready";
+	const isAdmin = session?.user?.role === "admin";
+	const needsOnboarding = session?.user?.needsOnboarding ?? false;
 
 	return {
 		status,
 		session,
-		profile,
 		isAuthenticated,
 		isAdmin,
-		needsProfile: needsOnboarding,
-		refreshProfile,
+		needsOnboarding,
+		refreshSession,
 		signInEmail,
 		signInGoogle,
 		signUpEmail,

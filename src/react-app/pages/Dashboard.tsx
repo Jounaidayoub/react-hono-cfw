@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/providers/auth-context";
+import { useProfile } from "@/providers/profile-provider";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { SessionCard } from "@/components/dashboard/SessionCard";
 import { AchievementItem } from "@/components/dashboard/AchievementItem";
@@ -56,7 +57,8 @@ const mockAchievements = [
 ];
 
 export default function Dashboard() {
-  const { profile, session } = useAuth();
+  const { session } = useAuth();
+  const { profile } = useProfile();
   const { totalXp, checkins, isLoading } = useUserDashboardData();
 
   const firstName =

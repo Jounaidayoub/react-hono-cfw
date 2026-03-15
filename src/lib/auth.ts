@@ -13,11 +13,19 @@ const trustedOrigins: string[] = env.TRUSTED_ORGINS.split(",");
 //   : [];
 
 // console.log("adminUserIds", adminUserIds);
-
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
   }),
+  user: {
+    additionalFields: {
+      needsOnboarding: {
+        type: "boolean",
+        default: true,
+        input: false
+      },
+    }
+  },
   trustedOrigins: trustedOrigins.flatMap((origin) => [
     origin,
     origin.replace("https://", "https://*-"),
@@ -102,3 +110,5 @@ export const auth = betterAuth({
     }),
   ],
 });
+
+// const { } = await auth.api.getSession()

@@ -11,11 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/providers/auth-context";
+import { useProfile } from "@/providers/profile-provider";
 import type { UserProfile } from "@/lib/schemas/index";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { status, session, profile, signOut } = useAuth();
+  const { status, session, signOut } = useAuth();
+  const { profile } = useProfile();
 
   const handleSignOut = async () => {
     await signOut();

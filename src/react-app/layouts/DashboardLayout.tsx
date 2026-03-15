@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { Outlet, useNavigate } from "react-router";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/providers/auth-context";
+import { useProfile } from "@/providers/profile-provider";
 import { useUserXP } from "@/hooks/use-xp";
 import {
   DropdownMenu,
@@ -23,7 +24,8 @@ import { Bell, LogOut, Settings, Shield, User, Zap } from "lucide-react";
 import { ModeToggle } from "@/components/dashboard/Theme-toggle";
 
 export default function DashboardLayout() {
-  const { profile, session, signOut, isAdmin } = useAuth();
+  const { session, signOut, isAdmin } = useAuth();
+  const { profile } = useProfile();
   const { totalXp } = useUserXP();
   const navigate = useNavigate();
 

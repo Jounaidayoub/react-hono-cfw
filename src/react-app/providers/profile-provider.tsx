@@ -15,8 +15,6 @@ import type { UserProfile } from "@/lib/schemas/index";
 
 interface ProfileContextValue {
 	profile: UserProfile | null;
-	needsOnboarding: boolean;
-	isAdmin: boolean;
 	profileLoading: boolean;
 	profileError: Error | null;
 	refreshProfile: () => Promise<void>;
@@ -35,41 +33,29 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 	const userId = session?.user?.id ?? null;
 
 	const [profile, setProfile] = useState<UserProfile | null>(null);
-	const [needsOnboarding, setNeedsOnboarding] = useState(false);
 	const [profileLoading, setProfileLoading] = useState(false);
 	const [profileError, setProfileError] = useState<Error | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 
-	// Synchronous state adjustment during render — eliminates the
-	// one-render gap between session resolving and profile fetch starting.
-	const [prevUserId, setPrevUserId] = useState<string | null>(null);
-	if (prevUserId !== userId) {
-		setPrevUserId(userId);
-		if (userId) {
-			setProfileLoading(true);
-		} else {
-			// Logged out — clear everything synchronously
+	const runProfileFetch = useCallback(async () => {
+		if (!userId) {
 			setProfile(null);
-			setNeedsOnboarding(false);
 			setProfileError(null);
 			setProfileLoading(false);
+			return;
 		}
-	}
-
-	const runProfileFetch = useCallback(async () => {
-		if (!userId) return;
 
 		abortRef.current?.abort();
 		const controller = new AbortController();
 		abortRef.current = controller;
 
+		setProfileLoading(true);
 		setProfileError(null);
 
 		try {
 			const data = await profileApi.get();
 			if (controller.signal.aborted) return;
 			setProfile(data);
-			setNeedsOnboarding(false);
 		} catch (error) {
 			if ((error as DOMException).name === "AbortError") return;
 			if (controller.signal.aborted) return;
@@ -78,7 +64,6 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 				switch (error.type) {
 					case "PROFILE_NOT_FOUND":
 						setProfile(null);
-						setNeedsOnboarding(true);
 						return;
 					default: {
 						const exhaustiveError: never = error.type;
@@ -87,10 +72,9 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 				}
 			}
 
-			// Network / unexpected error — do NOT treat as needsOnboarding
+			// Network / unexpected error
 			const errorObj = error as Error;
 			setProfileError(errorObj);
-			setNeedsOnboarding(false);
 			toast.error(errorObj.message || "Failed to load profile");
 		} finally {
 			if (!controller.signal.aborted) {
@@ -100,7 +84,13 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 	}, [userId]);
 
 	useEffect(() => {
-		if (!userId) return;
+		if (!userId) {
+			setProfile(null);
+			setProfileError(null);
+			setProfileLoading(false);
+			return;
+		}
+
 		runProfileFetch();
 
 		return () => {
@@ -113,7 +103,6 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 		if (!isAuthenticated) {
 			abortRef.current?.abort();
 			setProfile(null);
-			setNeedsOnboarding(false);
 			setProfileError(null);
 		}
 	}, [isAuthenticated]);
@@ -122,23 +111,15 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 		await runProfileFetch();
 	}, [runProfileFetch]);
 
-	const isAdmin = useMemo(() => {
-		return session?.user?.role === "admin";
-	}, [session?.user?.role]);
-
 	const value = useMemo<ProfileContextValue>(
 		() => ({
 			profile,
-			needsOnboarding,
-			isAdmin,
 			profileLoading,
 			profileError,
 			refreshProfile,
 		}),
 		[
 			profile,
-			needsOnboarding,
-			isAdmin,
 			profileLoading,
 			profileError,
 			refreshProfile,
