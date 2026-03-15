@@ -44,4 +44,13 @@ export const eventsApi = {
 		}),
 	getQrCode: (id: string) => apiFetch<QRData>(`/api/events/${id}/qr`),
 	getAttendees: (id: string) => apiFetch<Attendee[]>(`/api/events/${id}/attendees`),
+	checkin: (eventId: string, code: string) =>
+		apiFetch<{ xpAwarded: number; eventName: string; totalXp: number }>(
+			`/api/events/${eventId}/checkin`,
+			{
+				method: "POST",
+				body: JSON.stringify({ code }),
+
+			},
+		),
 };

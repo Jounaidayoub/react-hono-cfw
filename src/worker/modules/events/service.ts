@@ -137,7 +137,7 @@ export function generateQrSecret(eventId: string): string {
 }
 
 function buildCheckinUrl(baseUrl: string, eventId: string, secret: string): string {
-	const url = new URL(`/api/events/${eventId}/checkin`, baseUrl);
+	const url = new URL(`/dashboard/checkin/${eventId}`, baseUrl);
 	url.searchParams.set("code", secret);
 	return url.toString();
 }

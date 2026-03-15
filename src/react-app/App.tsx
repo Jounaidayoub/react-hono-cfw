@@ -1,80 +1,69 @@
 import { Navigate, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { AuthGate } from "@/components/auth-gate";
-import { AuthProvider } from "@/providers/auth-context";
 import Login from "@/pages/Login";
 import Onboarding from "@/pages/Onboarding";
 import Profile from "@/pages/Profile";
 import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import DashboardLayout from "@/layouts/DashboardLayout";
-import { ThemeProvider } from "@/providers/theme-provider";
-import { QueryProvider } from "@/providers/query-provider";
 import Settings from "@/pages/Settings";
 import Calendar from "@/pages/Calendar";
 import Admin from "@/pages/Admin";
 import AdminEvents from "@/pages/AdminEvents";
-import CheckinSuccess from "@/pages/CheckinSuccess";
-import CheckinError from "@/pages/CheckinError";
+import CheckinRoute from "@/pages/CheckinRoute";
 
 function App() {
   return (
-    <ThemeProvider storageKey="xplore-ui-theme" defaultTheme="dark">
-      <QueryProvider>
-        <AuthProvider>
-          <Toaster richColors position="top-center" />
-          <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <>
+      <Toaster richColors position="top-center" />
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          {/* Public/Auth Routes */}
-          <Route
-            path="/login"
-            element={
-              <AuthGate requireProfile={false}>
-                <Login />
-              </AuthGate>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <AuthGate requireProfile={false}>
-                <Signup />
-              </AuthGate>
-            }
-          />
-          <Route
-            path="/onboarding"
-            element={
-              <AuthGate requireProfile={false}>
-                <Onboarding />
-              </AuthGate>
-            }
-          />
+        {/* Public/Auth Routes */}
+        <Route
+          path="/login"
+          element={
+            <AuthGate requireProfile={false}>
+              <Login />
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <AuthGate requireProfile={false}>
+              <Signup />
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/onboarding"
+          element={
+            <AuthGate requireProfile={false}>
+              <Onboarding />
+            </AuthGate>
+          }
+        />
 
-          {/* Dashboard Layout Routes */}
-          <Route
-            element={
-              <AuthGate>
-                <DashboardLayout />
-              </AuthGate>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/events" element={<AdminEvents />} />
-          </Route>
-
-          {/* Check-in result pages (no auth required - they show result after redirect) */}
-          <Route path="/checkin/success" element={<CheckinSuccess />} />
-          <Route path="/checkin/error" element={<CheckinError />} />
-          </Routes>
-        </AuthProvider>
-      </QueryProvider>
-    </ThemeProvider>
+        {/* Dashboard Layout Routes */}
+        <Route
+          element={
+            <AuthGate>
+              <DashboardLayout />
+            </AuthGate>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/events" element={<AdminEvents />} />
+          <Route path="/dashboard/checkin/:eventId" element={<CheckinRoute />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

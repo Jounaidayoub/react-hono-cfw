@@ -48,7 +48,7 @@ export function useEvents() {
 		events: query.data ?? [],
 		isLoading: query.isLoading,
 		error: query.error as Error | null,
-		
+
 	};
 }
 
@@ -154,7 +154,7 @@ export function useEventQR(eventId: string | null) {
 		qrData: query.data ?? null,
 		isLoading: query.isLoading,
 		error: query.error ?? null,
-	
+
 	};
 }
 

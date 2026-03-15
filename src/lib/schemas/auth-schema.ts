@@ -1,4 +1,4 @@
-import { relations, sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 export const user = sqliteTable("user", {
@@ -110,8 +110,3 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }));
-
-export type User = InferSelectModel<typeof user>;
-export type UserInsert = InferInsertModel<typeof user>;
-export type Session = InferSelectModel<typeof session>;
-export type Account = InferSelectModel<typeof account>;

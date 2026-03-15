@@ -8,9 +8,11 @@ import { Buffer } from "node:buffer";
 
 const trustedOrigins: string[] = env.TRUSTED_ORGINS.split(",");
 
-const adminUserIds = env.ADMIN_USER_IDS
-  ? env.ADMIN_USER_IDS.split(",").map((id: string) => id.trim())
-  : [];
+// const adminUserIds = env.ADMIN_USER_IDS
+//   ? env.ADMIN_USER_IDS.split(",").map((id: string) => id.trim())
+//   : [];
+
+// console.log("adminUserIds", adminUserIds);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -93,9 +95,10 @@ export const auth = betterAuth({
   },
   plugins: [
     admin({
+
       defaultRole: "user",
       adminRoles: ["admin"],
-      adminUserIds: adminUserIds,
+      // adminUserIds: adminUserIds,
     }),
   ],
 });
